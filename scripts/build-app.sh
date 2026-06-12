@@ -46,7 +46,14 @@ EOF
 
 cp .build/release/caf dist/caf
 
-codesign --force --sign - "$APP"
+# 优先用本机固定证书（scripts/setup-signing.sh 配置），重建不丢 TCC 授权；否则回退 ad-hoc
+IDENTITY="Caffinate Local Signing"
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENTITY"; then
+    codesign --force --sign "$IDENTITY" "$APP"
+else
+    echo "⚠️ 未配置本机签名证书（可运行 scripts/setup-signing.sh），使用 ad-hoc 签名"
+    codesign --force --sign - "$APP"
+fi
 echo "✅ 已生成 $APP 与 dist/caf"
 echo "   安装 App：cp -R $APP /Applications/"
 echo "   安装 CLI：sudo cp dist/caf /usr/local/bin/"
