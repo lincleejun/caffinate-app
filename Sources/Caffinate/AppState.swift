@@ -40,6 +40,7 @@ final class AppState: ObservableObject {
     private var ticker: Timer?
     private var caffeineElevatedByPomodoro = false
     private var cancellables = Set<AnyCancellable>()
+    private var controlServer: ControlServer?
 
     init() {
         let focus = defaults.object(forKey: "focusMinutes") as? Int ?? 25
@@ -59,6 +60,8 @@ final class AppState: ObservableObject {
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
         requestNotificationPermission()
+        controlServer = ControlServer(state: self)
+        controlServer?.start()
     }
 
     // MARK: - 番茄钟操作
