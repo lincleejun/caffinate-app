@@ -2,12 +2,19 @@ import SwiftUI
 
 @main
 struct CaffinateApp: App {
+    @StateObject private var state = AppState()
+
     var body: some Scene {
         MenuBarExtra {
-            Text("Caffinate")
-                .padding()
+            PopoverView()
+                .environmentObject(state)
         } label: {
-            Image(systemName: "cup.and.saucer")
+            if let title = state.menuBarTitle {
+                Text(title)
+            } else {
+                Image(systemName: state.caffeine.mode == .off
+                      ? "cup.and.saucer" : "cup.and.saucer.fill")
+            }
         }
         .menuBarExtraStyle(.window)
     }
