@@ -12,6 +12,11 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
+            name: "caf",
+            dependencies: ["CaffinateKit"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .executableTarget(
             name: "caffinate-tests",
             dependencies: ["CaffinateKit"],
             swiftSettings: [.swiftLanguageMode(.v5)]
