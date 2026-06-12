@@ -25,6 +25,20 @@ open /Applications/Caffinate.app
 增强档需要「辅助功能」权限：系统设置 → 隐私与安全性 → 辅助功能 → 添加 Caffinate。
 注意：本应用为 ad-hoc 签名，**每次重新构建后需要重新授权**（先移除旧条目再添加）。
 
+## CLI
+
+`caf` 可在终端查看/控制一切（App 未运行时自动拉起）：
+
+```bash
+caf                       # 状态总览
+caf on / caf on max / caf off   # 咖啡因三档
+caf pomo / caf pause / caf reset  # 番茄钟
+caf set focus 30          # 设置（rest / auto-caf / auto-off 同理）
+caf json                  # JSON 输出，脚本用
+```
+
+安装：`./scripts/build-app.sh && sudo cp dist/caf /usr/local/bin/`
+
 ## 开发
 
 ```bash

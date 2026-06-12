@@ -41,6 +41,9 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
 </plist>
 EOF
 
+cp .build/release/caf dist/caf
+
 codesign --force --sign - "$APP"
-echo "✅ 已生成 $APP"
-echo "   安装：cp -R $APP /Applications/"
+echo "✅ 已生成 $APP 与 dist/caf"
+echo "   安装 App：cp -R $APP /Applications/"
+echo "   安装 CLI：sudo cp dist/caf /usr/local/bin/"
