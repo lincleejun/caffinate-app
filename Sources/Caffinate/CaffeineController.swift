@@ -40,7 +40,10 @@ final class CaffeineController: ObservableObject {
     func set(_ newMode: Mode) {
         lastError = nil
         if newMode == .enhanced && !Self.accessibilityTrusted {
-            lastError = "增强档需要「辅助功能」权限"
+            // 弹系统授权请求：会把当前二进制登记到辅助功能列表
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            AXIsProcessTrustedWithOptions(options)
+            lastError = "增强档需要「辅助功能」权限，已弹出系统授权请求"
             return
         }
 

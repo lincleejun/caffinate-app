@@ -2,7 +2,9 @@ import SwiftUI
 
 struct CaffeineCard: View {
     @EnvironmentObject var state: AppState
-    @State private var axTrusted = CaffeineController.accessibilityTrusted
+
+    // 每次重渲染实时取值，授权后提示即时消失
+    private var axTrusted: Bool { CaffeineController.accessibilityTrusted }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -47,7 +49,6 @@ struct CaffeineCard: View {
             }
         }
         .card()
-        .onAppear { axTrusted = CaffeineController.accessibilityTrusted }
     }
 
     private var statusText: String {
