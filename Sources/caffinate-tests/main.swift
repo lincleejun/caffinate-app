@@ -7,6 +7,19 @@ func expect(_ condition: Bool, _ label: String, line: Int = #line) {
     else { failures += 1; print("FAIL - \(label) (line \(line))") }
 }
 
+/// 记录调用次序的假 vendor，模拟系统 Focus 切换同步完成。
+final class FakeFocusVendor: FocusVendor {
+    var activations = 0
+    var deactivations = 0
+    var events: [String] = []
+    func activate() { activations += 1; events.append("on") }
+    func deactivate(then: (() -> Void)?) {
+        deactivations += 1
+        events.append("off")   // 系统 Focus 已关
+        then?()                // 关闭完成后才跑回调
+    }
+}
+
 // 1. 初始状态
 do {
     let e = PomodoroEngine()
@@ -94,7 +107,8 @@ do {
         state: ControlState(
             caffeineMode: "basic", phase: "focus", remainingSeconds: 90,
             isPaused: false, focusMinutes: 25, restMinutes: 5,
-            autoCaffeinate: true, autoOffHours: 0, accessibilityTrusted: false))
+            autoCaffeinate: true, autoOffHours: 0,
+            linkSystemFocus: false, accessibilityTrusted: false))
     let rdata = try! JSONEncoder().encode(resp)
     let rback = try! JSONDecoder().decode(ControlResponse.self, from: rdata)
     expect(rback == resp, "ControlResponse 编解码 round-trip")
@@ -139,6 +153,35 @@ do {
     expect(isFailure(["set", "auto-off", "3"]), "auto-off 非枚举值 → failure")
     expect(isFailure(["set", "auto-caf", "maybe"]), "auto-caf 非 on/off → failure")
     expect(isFailure(["set", "focus"]), "set 缺参数 → failure")
+    // focus-link 开关解析
+    if case .run(let p) = CLIParse.parse(["set", "focus-link", "on"]) {
+        expect(p.request == ControlRequest(command: "set", args: ["focus-link", "on"]),
+               "caf set focus-link on")
+    } else { expect(false, "caf set focus-link on 应可解析") }
+    expect(isFailure(["set", "focus-link", "maybe"]), "focus-link 非 on/off → failure")
+}
+
+// 11. FocusLinker：幂等 + 「先关 Focus 再回调」次序
+do {
+    let v = FakeFocusVendor()
+    let linker = FocusLinker(vendor: v)
+
+    linker.engage()
+    expect(v.activations == 1 && linker.isActive, "engage 开启一次")
+    linker.engage()
+    expect(v.activations == 1, "重复 engage 幂等（不重复开）")
+
+    v.events.removeAll()
+    linker.disengage(then: { v.events.append("notify") })
+    expect(v.deactivations == 1 && !linker.isActive, "disengage 关闭一次")
+    expect(v.events == ["off", "notify"], "先关系统 Focus，再跑回调（发通知）")
+
+    var ran = false
+    linker.disengage(then: { ran = true })
+    expect(v.deactivations == 1 && ran, "未开启时 disengage 不调 vendor，但回调仍执行")
+
+    linker.engage()
+    expect(v.activations == 2 && linker.isActive, "可再次 engage")
 }
 
 if failures > 0 {

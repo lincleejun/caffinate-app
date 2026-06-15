@@ -101,7 +101,8 @@ func render(_ resp: ControlResponse) {
 
     let autoOff = s.autoOffHours == 0 ? "从不" : "\(Int(s.autoOffHours))h"
     print("⚙️ 设置：专注 \(s.focusMinutes)min · 休息 \(s.restMinutes)min"
-          + " · 自动防休眠 \(s.autoCaffeinate ? "开" : "关") · 自动关闭 \(autoOff)")
+          + " · 自动防休眠 \(s.autoCaffeinate ? "开" : "关") · 自动关闭 \(autoOff)"
+          + " · 专注联动 Focus \(s.linkSystemFocus ? "开" : "关")")
     if !s.accessibilityTrusted {
         print("⚠️ 辅助功能未授权：增强档不可用（系统设置 → 隐私与安全性 → 辅助功能）")
     }

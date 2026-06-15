@@ -171,6 +171,12 @@ final class ControlServer {
             }
             state.autoOffHours = v
             return success(state, "自动关闭 → \(v == 0 ? "从不" : "\(Int(v)) 小时")")
+        case "focus-link":
+            guard args[1] == "on" || args[1] == "off" else {
+                return ControlResponse(ok: false, error: "focus-link 取值 on|off")
+            }
+            state.linkSystemFocus = (args[1] == "on")
+            return success(state, "专注联动系统 Focus → \(args[1] == "on" ? "开" : "关")")
         default:
             return ControlResponse(ok: false, error: "未知设置项「\(args[0])」")
         }
@@ -204,6 +210,7 @@ final class ControlServer {
             restMinutes: state.restMinutes,
             autoCaffeinate: state.autoCaffeinate,
             autoOffHours: state.autoOffHours,
+            linkSystemFocus: state.linkSystemFocus,
             accessibilityTrusted: CaffeineController.accessibilityTrusted
         )
     }

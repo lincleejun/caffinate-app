@@ -20,11 +20,13 @@ public struct ControlState: Codable, Equatable {
     public var restMinutes: Int
     public var autoCaffeinate: Bool
     public var autoOffHours: Double
+    public var linkSystemFocus: Bool  // 专注时联动系统 Focus（静音通知）
     public var accessibilityTrusted: Bool
 
     public init(caffeineMode: String, phase: String, remainingSeconds: Int,
                 isPaused: Bool, focusMinutes: Int, restMinutes: Int,
-                autoCaffeinate: Bool, autoOffHours: Double, accessibilityTrusted: Bool) {
+                autoCaffeinate: Bool, autoOffHours: Double,
+                linkSystemFocus: Bool, accessibilityTrusted: Bool) {
         self.caffeineMode = caffeineMode
         self.phase = phase
         self.remainingSeconds = remainingSeconds
@@ -33,6 +35,7 @@ public struct ControlState: Codable, Equatable {
         self.restMinutes = restMinutes
         self.autoCaffeinate = autoCaffeinate
         self.autoOffHours = autoOffHours
+        self.linkSystemFocus = linkSystemFocus
         self.accessibilityTrusted = accessibilityTrusted
     }
 }
@@ -96,6 +99,7 @@ public enum CLIParse {
       caf set rest <1-60>     休息分钟数
       caf set auto-caf on|off 专注时自动防休眠
       caf set auto-off <0|1|2|4|8>  防休眠 N 小时自动关（0=从不）
+      caf set focus-link on|off 专注时联动系统 Focus（静音通知，需快捷指令）
       caf help                本说明
     """
 
@@ -154,6 +158,11 @@ public enum CLIParse {
                 return .failure("auto-off 取值 0|1|2|4|8 小时（0=从不）")
             }
             return .run(.init(request: .init(command: "set", args: ["auto-off", value])))
+        case "focus-link":
+            guard value == "on" || value == "off" else {
+                return .failure("focus-link 取值 on|off")
+            }
+            return .run(.init(request: .init(command: "set", args: ["focus-link", value])))
         default:
             return .failure("未知设置项「\(key)」")
         }

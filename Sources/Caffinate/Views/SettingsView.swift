@@ -17,6 +17,13 @@ struct SettingsView: View {
 
             Toggle("专注时自动防休眠", isOn: $state.autoCaffeinate)
 
+            Toggle("专注时静音通知（联动系统 Focus）", isOn: $state.linkSystemFocus)
+            if state.linkSystemFocus {
+                Text("需在「快捷指令」中建立 “Caffinate Focus On” 与 “Caffinate Focus Off”")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+
             Picker("防休眠自动关闭", selection: $state.autoOffHours) {
                 Text("从不").tag(0.0)
                 Text("1 小时").tag(1.0)

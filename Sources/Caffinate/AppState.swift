@@ -35,10 +35,18 @@ final class AppState: ObservableObject {
             caffeine.autoOffHours = autoOffHours
         }
     }
+    /// 专注时联动系统 Focus（静音通知）。默认关——需用户先建两个快捷指令。
+    @Published var linkSystemFocus: Bool {
+        didSet {
+            defaults.set(linkSystemFocus, forKey: "linkSystemFocus")
+            syncFocusLink()
+        }
+    }
 
     private let defaults = UserDefaults.standard
     private var ticker: Timer?
     private var caffeineElevatedByPomodoro = false
+    private let focusLinker = FocusLinker(vendor: ShortcutsFocusVendor())
     private var cancellables = Set<AnyCancellable>()
     private var controlServer: ControlServer?
 
@@ -49,6 +57,7 @@ final class AppState: ObservableObject {
         restMinutes = rest
         autoCaffeinate = defaults.object(forKey: "autoCaffeinate") as? Bool ?? true
         autoOffHours = defaults.object(forKey: "autoOffHours") as? Double ?? 0
+        linkSystemFocus = defaults.object(forKey: "linkSystemFocus") as? Bool ?? false
         engine = PomodoroEngine(
             focusDuration: TimeInterval(focus * 60),
             restDuration: TimeInterval(rest * 60)
@@ -104,11 +113,28 @@ final class AppState: ObservableObject {
         phase = engine.phase
         remaining = max(0, engine.remaining)
         isPaused = engine.isPaused
+        syncFocusLink()
+    }
+
+    /// 系统 Focus 应在「联动开启 且 正专注 且 未暂停」时打开，其余一律关闭。
+    /// 单一出口，覆盖开始/暂停/继续/重置/进入休息所有路径；FocusLinker 自身幂等。
+    private func syncFocusLink() {
+        if linkSystemFocus, engine.phase == .focus, !engine.isPaused {
+            focusLinker.engage()
+        } else {
+            focusLinker.disengage()
+        }
     }
 
     private func phaseDidEnd(_ ended: PomodoroEngine.Phase) {
-        notify(ended)
-        if ended == .rest { restoreCaffeineIfNeeded() }
+        if ended == .focus {
+            // 专注结束进入休息：先关掉系统 Focus，关完再发「专注结束」通知，
+            // 否则通知会被勿扰吞掉。未开启联动时 disengage 会立即跑回调。
+            focusLinker.disengage(then: { [weak self] in self?.notify(ended) })
+        } else {
+            notify(ended)
+            restoreCaffeineIfNeeded()
+        }
     }
 
     /// 番茄钟自动开启的防休眠，整个周期结束（或重置）时恢复为关

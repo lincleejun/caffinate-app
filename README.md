@@ -9,6 +9,7 @@
   - 增强：基础 + 每 50 秒模拟一次 F15 空键重置系统空闲计时，应对强制 idle 锁屏
 - **番茄钟**：25/5 可配置，菜单栏直接显示 `🍅 17:32` 倒计时，结束系统通知 + 提示音
 - 专注时自动开启防休眠（可关）；防休眠可设 N 小时自动关闭；登录自启
+- **专注联动系统 Focus**（可选）：专注时自动开启 macOS Focus/勿扰静音通知，休息/暂停/结束时自动关闭（见下文配置）
 
 ## 构建 & 安装
 
@@ -28,6 +29,23 @@ open /Applications/Caffinate.app
 之后所有构建使用固定签名，**授权在重建后保持有效**。未配置证书时回退 ad-hoc 签名，
 那种情况下每次重建都需删除旧授权条目并重新添加。
 
+## 专注联动系统 Focus（静音通知）
+
+macOS 不允许 App 直接切换系统 Focus/勿扰，需借「快捷指令」桥接（Apple 安全限制：添加快捷指令必须用户亲自确认，无法静默创建）。
+
+**已预置导出文件时**（`Resources/shortcuts/`，见该目录 README）：
+```bash
+./scripts/setup-focus-shortcuts.sh   # 弹出快捷指令，点两下「添加」即可（已存在则跳过）
+```
+
+**手动配置：**
+1. 打开「快捷指令」App，新建快捷指令，命名 **`Caffinate Focus On`**，加入 `设定专注模式`（Set Focus）动作 → 选你要联动的 Focus（如「勿扰」）→ 设为「开启」。
+2. 再新建一个命名 **`Caffinate Focus Off`**，同样用 `设定专注模式` 动作 → 设为「关闭」。
+
+然后在 Caffinate 设置里打开「专注时静音通知（联动系统 Focus）」，或 `caf set focus-link on`。
+
+之后：进入专注自动开 Focus；暂停 / 进入休息 / 重置时自动关。专注结束的提示通知会**先关 Focus 再发**，不会被勿扰吞掉。名字不符或未建快捷指令时静默跳过，不影响其他功能。
+
 ## CLI
 
 `caf` 可在终端查看/控制一切（App 未运行时自动拉起）：
@@ -37,6 +55,7 @@ caf                       # 状态总览
 caf on / caf on max / caf off   # 咖啡因三档
 caf pomo / caf pause / caf reset  # 番茄钟
 caf set focus 30          # 设置（rest / auto-caf / auto-off 同理）
+caf set focus-link on     # 专注联动系统 Focus 开/关
 caf json                  # JSON 输出，脚本用
 ```
 
