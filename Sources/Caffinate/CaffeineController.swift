@@ -24,10 +24,20 @@ final class CaffeineController: ObservableObject {
     /// 0 = 从不自动关
     var autoOffHours: Double = 0
 
+    /// 当前是否真正持有防休眠断言（供诊断用）。
+    var holdsAssertion: Bool { hasAssertion }
+
     private var assertionID: IOPMAssertionID = 0
     private var hasAssertion = false
     private var phantomKeyTimer: Timer?
     private var autoOffTimer: Timer?
+
+    init() {
+        // 系统唤醒后重申断言，避免休眠期间被回收导致「看似开着其实没挡」
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(systemDidWake),
+            name: NSWorkspace.didWakeNotification, object: nil)
+    }
 
     static var accessibilityTrusted: Bool { AXIsProcessTrusted() }
 
@@ -49,21 +59,9 @@ final class CaffeineController: ObservableObject {
 
         if newMode == .off {
             releaseAssertion()
-        } else if !hasAssertion {
-            var id: IOPMAssertionID = 0
-            let result = IOPMAssertionCreateWithName(
-                kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
-                IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                "Caffinate 防休眠" as CFString,
-                &id
-            )
-            guard result == kIOReturnSuccess else {
-                lastError = "防休眠开启失败 (IOKit \(result))"
-                mode = .off
-                return
-            }
-            assertionID = id
-            hasAssertion = true
+        } else if !ensureAssertion() {
+            mode = .off
+            return
         }
 
         phantomKeyTimer?.invalidate()
@@ -89,6 +87,33 @@ final class CaffeineController: ObservableObject {
         }
     }
 
+    /// 创建防休眠断言（已持有则直接成功）。失败置 lastError。
+    @discardableResult
+    private func ensureAssertion() -> Bool {
+        guard !hasAssertion else { return true }
+        var id: IOPMAssertionID = 0
+        let result = IOPMAssertionCreateWithName(
+            kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
+            IOPMAssertionLevel(kIOPMAssertionLevelOn),
+            "Caffinate 防休眠" as CFString,
+            &id
+        )
+        guard result == kIOReturnSuccess else {
+            lastError = "防休眠开启失败 (IOKit \(result))"
+            return false
+        }
+        assertionID = id
+        hasAssertion = true
+        return true
+    }
+
+    /// 唤醒后重申：先释放再重建，确保断言在新会话中真正生效。
+    @objc private func systemDidWake() {
+        guard mode != .off else { return }
+        releaseAssertion()
+        if !ensureAssertion() { mode = .off }
+    }
+
     private func releaseAssertion() {
         if hasAssertion {
             IOPMAssertionRelease(assertionID)
@@ -107,6 +132,7 @@ final class CaffeineController: ObservableObject {
     }
 
     deinit {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
         phantomKeyTimer?.invalidate()
         autoOffTimer?.invalidate()
         releaseAssertion()

@@ -97,6 +97,9 @@ public final class CSVHistorySink: HistorySink {
     private let url: URL
     private static let header = "type,start,end,duration_sec,detail"
 
+    /// 落盘文件路径（供诊断/展示）。
+    public var path: String { url.path }
+
     /// 默认落盘位置：Application Support/Caffinate/history.csv（与 socket 同目录）。
     public static var defaultURL: URL {
         let dir = FileManager.default

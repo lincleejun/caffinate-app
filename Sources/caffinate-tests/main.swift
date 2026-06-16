@@ -168,6 +168,20 @@ do {
     } else { expect(false, "caf history 5 应可解析") }
     expect(isFailure(["history", "0"]), "history 0 → failure")
     expect(isFailure(["history", "abc"]), "history 非数字 → failure")
+    // doctor 解析
+    if case .run(let p) = CLIParse.parse(["doctor"]) {
+        expect(p.request == ControlRequest(command: "doctor"), "caf doctor → doctor")
+    } else { expect(false, "caf doctor 应可解析") }
+}
+
+// 10b. Diagnostics 编解码 round-trip
+do {
+    let d = Diagnostics(caffeineMode: "enhanced", holdsAssertion: true, accessibilityTrusted: true,
+                        linkSystemFocus: true, focusShortcutsInstalled: false,
+                        historyPath: "/tmp/x.csv", historyWritable: true)
+    let resp = ControlResponse(ok: true, diagnostics: d)
+    let back = try! JSONDecoder().decode(ControlResponse.self, from: JSONEncoder().encode(resp))
+    expect(back == resp && back.diagnostics == d, "Diagnostics/ControlResponse 编解码 round-trip")
 }
 
 // 11. FocusLinker：幂等 + 「先关 Focus 再回调」次序

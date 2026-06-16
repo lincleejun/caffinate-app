@@ -104,6 +104,9 @@ final class ControlServer {
             let n = max(1, Int(request.args.first ?? "") ?? 20)
             return ControlResponse(ok: true, state: snapshot(state), history: state.history(n))
 
+        case "doctor":
+            return ControlResponse(ok: true, diagnostics: state.diagnostics())
+
         case "caffeine":
             let target: CaffeineController.Mode?
             switch request.args.first {

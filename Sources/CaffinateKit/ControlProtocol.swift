@@ -40,20 +40,46 @@ public struct ControlState: Codable, Equatable {
     }
 }
 
+/// `caf doctor` 健康自检：一眼看清谁在挡/放休眠 + 权限/配置状态。
+public struct Diagnostics: Codable, Equatable {
+    public var caffeineMode: String
+    public var holdsAssertion: Bool        // 是否真正持有防休眠断言
+    public var accessibilityTrusted: Bool  // 增强档所需
+    public var linkSystemFocus: Bool
+    public var focusShortcutsInstalled: Bool  // 两个快捷指令都在
+    public var historyPath: String
+    public var historyWritable: Bool
+
+    public init(caffeineMode: String, holdsAssertion: Bool, accessibilityTrusted: Bool,
+                linkSystemFocus: Bool, focusShortcutsInstalled: Bool,
+                historyPath: String, historyWritable: Bool) {
+        self.caffeineMode = caffeineMode
+        self.holdsAssertion = holdsAssertion
+        self.accessibilityTrusted = accessibilityTrusted
+        self.linkSystemFocus = linkSystemFocus
+        self.focusShortcutsInstalled = focusShortcutsInstalled
+        self.historyPath = historyPath
+        self.historyWritable = historyWritable
+    }
+}
+
 public struct ControlResponse: Codable, Equatable {
     public var ok: Bool
     public var message: String?
     public var error: String?
     public var state: ControlState?
     public var history: [HistoryRecord]?
+    public var diagnostics: Diagnostics?
 
     public init(ok: Bool, message: String? = nil, error: String? = nil,
-                state: ControlState? = nil, history: [HistoryRecord]? = nil) {
+                state: ControlState? = nil, history: [HistoryRecord]? = nil,
+                diagnostics: Diagnostics? = nil) {
         self.ok = ok
         self.message = message
         self.error = error
         self.state = state
         self.history = history
+        self.diagnostics = diagnostics
     }
 }
 
@@ -104,6 +130,7 @@ public enum CLIParse {
       caf set auto-off <0|1|2|4|8>  防休眠 N 小时自动关（0=从不）
       caf set focus-link on|off 专注时联动系统 Focus（静音通知，需快捷指令）
       caf history [n]         运行历史（默认最近 20 条）
+      caf doctor              健康自检（断言/权限/快捷指令/历史）
       caf help                本说明
     """
 
@@ -123,6 +150,8 @@ public enum CLIParse {
             }
         case "off":
             return .run(.init(request: .init(command: "caffeine", args: ["off"])))
+        case "doctor":
+            return .run(.init(request: .init(command: "doctor")))
         case "history":
             switch argv.dropFirst().first {
             case nil:

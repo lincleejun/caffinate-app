@@ -46,6 +46,11 @@ final class AppState: ObservableObject {
     /// menubar 展示用：最近若干条运行历史（最新在前）。
     @Published private(set) var recentHistory: [HistoryRecord] = []
 
+    /// 是否已完成首启引导。false 时 popover 显示引导。
+    @Published var didOnboard: Bool {
+        didSet { defaults.set(didOnboard, forKey: "didOnboard") }
+    }
+
     private let defaults = UserDefaults.standard
     private var ticker: Timer?
     private var caffeineElevatedByPomodoro = false
@@ -63,6 +68,19 @@ final class AppState: ObservableObject {
     /// 供 ControlServer/CLI 用：最近 n 条。
     func history(_ n: Int) -> [HistoryRecord] { historySink.recent(n) }
 
+    /// 健康自检快照（供 `caf doctor`）。
+    func diagnostics() -> Diagnostics {
+        Diagnostics(
+            caffeineMode: Self.modeCSV(caffeine.mode),
+            holdsAssertion: caffeine.holdsAssertion,
+            accessibilityTrusted: CaffeineController.accessibilityTrusted,
+            linkSystemFocus: linkSystemFocus,
+            focusShortcutsInstalled: ShortcutsFocusVendor.installed(),
+            historyPath: historySink.path,
+            historyWritable: FileManager.default.isWritableFile(atPath: historySink.path)
+        )
+    }
+
     init() {
         let focus = defaults.object(forKey: "focusMinutes") as? Int ?? 25
         let rest = defaults.object(forKey: "restMinutes") as? Int ?? 5
@@ -71,6 +89,7 @@ final class AppState: ObservableObject {
         autoCaffeinate = defaults.object(forKey: "autoCaffeinate") as? Bool ?? true
         autoOffHours = defaults.object(forKey: "autoOffHours") as? Double ?? 0
         linkSystemFocus = defaults.object(forKey: "linkSystemFocus") as? Bool ?? false
+        didOnboard = defaults.object(forKey: "didOnboard") as? Bool ?? false
         engine = PomodoroEngine(
             focusDuration: TimeInterval(focus * 60),
             restDuration: TimeInterval(rest * 60)
@@ -90,10 +109,12 @@ final class AppState: ObservableObject {
                 self.refreshHistory()
             }
             .store(in: &cancellables)
-        // App 退出：收尾未结束的咖啡因段
+        // App 退出：收尾未结束的咖啡因段（queue: .main 保证主线程，可安全 assumeIsolated）
         NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification, object: nil, queue: .main
-        ) { [weak self] _ in self?.historyTracker.flush(at: Date()) }
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.historyTracker.flush(at: Date()) }
+        }
         recentHistory = historySink.recent(6)
         requestNotificationPermission()
         controlServer = ControlServer(state: self)

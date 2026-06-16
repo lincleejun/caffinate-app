@@ -11,7 +11,26 @@
 - 专注时自动开启防休眠（可关）；防休眠可设 N 小时自动关闭；登录自启
 - **专注联动系统 Focus**（可选）：专注时自动开启 macOS Focus/勿扰静音通知，休息/暂停/结束时自动关闭（见下文配置）
 
-## 构建 & 安装
+## 安装
+
+### 下载安装（推荐）
+
+到 [Releases](https://github.com/lincleejun/caffinate-app/releases) 下载 `Caffinate.app.zip`,解压拖进「应用程序」。
+
+> 应用**未签名**(没有 Apple 付费账号)。首次打开若提示「无法打开」,**右键 App → 打开**即可;或:
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/Caffinate.app
+> ```
+
+### Homebrew
+
+把 `HomebrewFormula/caffinate.rb` 放进你的 tap(如 `lincleejun/homebrew-tap`)后:
+
+```bash
+brew install --cask lincleejun/tap/caffinate
+```
+
+### 从源码构建
 
 仅需 macOS 14+ 与 Command Line Tools（`xcode-select --install`）：
 
@@ -20,6 +39,8 @@
 cp -R dist/Caffinate.app /Applications/
 open /Applications/Caffinate.app
 ```
+
+首次运行会有一页**引导**,介绍三档防休眠、番茄钟+历史、可选的系统 Focus 联动。
 
 ## 增强档授权
 
@@ -56,6 +77,8 @@ caf on / caf on max / caf off   # 咖啡因三档
 caf pomo / caf pause / caf reset  # 番茄钟
 caf set focus 30          # 设置（rest / auto-caf / auto-off 同理）
 caf set focus-link on     # 专注联动系统 Focus 开/关
+caf history [n]           # 运行历史（默认 20 条）
+caf doctor                # 健康自检：断言/权限/快捷指令/历史
 caf json                  # JSON 输出，脚本用
 ```
 
@@ -77,4 +100,11 @@ pmset -g assertions | grep -i caffinate
 
 # 增强档：不碰键鼠时，系统空闲秒数应始终 ≤ 50
 ioreg -c IOHIDSystem | awk '/HIDIdleTime/ {print $NF/1000000000; exit}'
+
+# 一键自检（推荐）
+caf doctor
 ```
+
+## License
+
+[MIT](LICENSE) © lincleejun

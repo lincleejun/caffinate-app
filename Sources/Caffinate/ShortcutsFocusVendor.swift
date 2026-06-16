@@ -19,6 +19,21 @@ final class ShortcutsFocusVendor: FocusVendor {
     func activate() { run(Self.onShortcut, then: nil) }
     func deactivate(then: (() -> Void)?) { run(Self.offShortcut, then: then) }
 
+    /// 两个快捷指令是否都已建好（供 `caf doctor`）。同步执行 `shortcuts list`。
+    static func installed() -> Bool {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
+        proc.arguments = ["list"]
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        proc.standardError = FileHandle.nullDevice
+        do { try proc.run() } catch { return false }
+        proc.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let out = String(decoding: data, as: UTF8.self)
+        return out.contains(onShortcut) && out.contains(offShortcut)
+    }
+
     private func run(_ shortcut: String, then: (() -> Void)?) {
         queue.async {
             let proc = Process()

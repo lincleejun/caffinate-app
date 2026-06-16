@@ -78,6 +78,18 @@ func fmtTime(_ seconds: Int) -> String {
 
 func render(_ resp: ControlResponse) {
     if let message = resp.message { print(message) }
+    if let d = resp.diagnostics {
+        func mark(_ ok: Bool) -> String { ok ? "✅" : "⚠️" }
+        let mode = ["off": "关", "basic": "基础", "enhanced": "增强"][d.caffeineMode] ?? d.caffeineMode
+        print("🩺 Caffinate 自检")
+        print("  咖啡因档位：\(mode)")
+        print("  \(mark(d.caffeineMode == "off" || d.holdsAssertion)) 防休眠断言：\(d.holdsAssertion ? "持有中" : (d.caffeineMode == "off" ? "未开启（正常）" : "未持有⚠️"))")
+        print("  \(mark(d.accessibilityTrusted)) 辅助功能授权：\(d.accessibilityTrusted ? "已授权" : "未授权（增强档不可用）")")
+        print("  \(mark(!d.linkSystemFocus || d.focusShortcutsInstalled)) 专注联动 Focus：\(d.linkSystemFocus ? "开" : "关")\(d.linkSystemFocus ? (d.focusShortcutsInstalled ? "（快捷指令就绪）" : "（缺快捷指令⚠️）") : "")")
+        print("  \(mark(d.historyWritable)) 历史可写：\(d.historyWritable ? "是" : "否")")
+        print("  历史文件：\(d.historyPath)")
+        return
+    }
     if let history = resp.history {
         if history.isEmpty { print("（暂无运行历史）") }
         else { for r in history { print(r.display) } }

@@ -5,6 +5,14 @@ struct PopoverView: View {
     @State private var showSettings = false
 
     var body: some View {
+        if state.didOnboard {
+            mainContent
+        } else {
+            OnboardingView()
+        }
+    }
+
+    private var mainContent: some View {
         VStack(spacing: 12) {
             HStack {
                 Text("Caffinate")
