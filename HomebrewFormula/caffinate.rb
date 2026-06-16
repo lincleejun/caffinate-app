@@ -2,7 +2,7 @@
 # 即可 `brew install --cask lincleejun/tap/caffinate`。
 # 发新版本时更新 version；如需校验和把 :no_check 换成真实 sha256。
 cask "caffinate" do
-  version "1.0.0"
+  version "0.0.1"
   sha256 :no_check
 
   url "https://github.com/lincleejun/caffinate-app/releases/download/v#{version}/Caffinate.app.zip"
