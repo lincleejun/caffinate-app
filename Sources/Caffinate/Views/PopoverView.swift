@@ -25,6 +25,7 @@ struct PopoverView: View {
             } else {
                 CaffeineCard()
                 PomodoroCard()
+                HistoryCard()
             }
 
             HStack {

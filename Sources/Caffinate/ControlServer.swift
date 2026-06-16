@@ -100,6 +100,10 @@ final class ControlServer {
         case "status":
             return success(state)
 
+        case "history":
+            let n = max(1, Int(request.args.first ?? "") ?? 20)
+            return ControlResponse(ok: true, state: snapshot(state), history: state.history(n))
+
         case "caffeine":
             let target: CaffeineController.Mode?
             switch request.args.first {

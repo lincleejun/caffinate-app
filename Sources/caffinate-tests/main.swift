@@ -159,6 +159,15 @@ do {
                "caf set focus-link on")
     } else { expect(false, "caf set focus-link on 应可解析") }
     expect(isFailure(["set", "focus-link", "maybe"]), "focus-link 非 on/off → failure")
+    // history 解析：默认与带条数
+    if case .run(let p) = CLIParse.parse(["history"]) {
+        expect(p.request == ControlRequest(command: "history", args: []), "caf history → history")
+    } else { expect(false, "caf history 应可解析") }
+    if case .run(let p) = CLIParse.parse(["history", "5"]) {
+        expect(p.request == ControlRequest(command: "history", args: ["5"]), "caf history 5")
+    } else { expect(false, "caf history 5 应可解析") }
+    expect(isFailure(["history", "0"]), "history 0 → failure")
+    expect(isFailure(["history", "abc"]), "history 非数字 → failure")
 }
 
 // 11. FocusLinker：幂等 + 「先关 Focus 再回调」次序
@@ -182,6 +191,77 @@ do {
 
     linker.engage()
     expect(v.activations == 2 && linker.isActive, "可再次 engage")
+}
+
+// 12. HistoryTracker：换档分段 / off 收尾 / 完成与中断 / flush
+do {
+    final class MemSink: HistorySink {
+        var records: [HistoryRecord] = []
+        func append(_ r: HistoryRecord) { records.append(r) }
+        func recent(_ n: Int) -> [HistoryRecord] { Array(records.suffix(n).reversed()) }
+    }
+    let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+    func at(_ s: Int) -> Date { t0.addingTimeInterval(TimeInterval(s)) }
+
+    let sink = MemSink()
+    let tr = HistoryTracker(sink: sink)
+
+    // off→basic→enhanced→off：应得两条 caffeine（basic 段、enhanced 段）
+    tr.caffeine(changedTo: "off", at: at(0))      // 无开段，不记
+    tr.caffeine(changedTo: "basic", at: at(10))   // 开 basic
+    tr.caffeine(changedTo: "enhanced", at: at(70))// 关 basic(60s)、开 enhanced
+    tr.caffeine(changedTo: "off", at: at(190))    // 关 enhanced(120s)
+    expect(sink.records.count == 2, "换档+关 → 两条 caffeine")
+    expect(sink.records[0].type == "caffeine" && sink.records[0].detail == "basic"
+           && sink.records[0].durationSec == 60, "第一段 basic 60s")
+    expect(sink.records[1].detail == "enhanced" && sink.records[1].durationSec == 120,
+           "第二段 enhanced 120s")
+
+    // 番茄钟：完成一段 focus，中断一段 focus
+    tr.pomodoroBegan("focus", at: at(200))
+    tr.pomodoroEnded(completed: true, at: at(200 + 1500))
+    tr.pomodoroBegan("focus", at: at(2000))
+    tr.pomodoroEnded(completed: false, at: at(2000 + 180))
+    expect(sink.records.count == 4, "两条番茄钟记录")
+    expect(sink.records[2].type == "focus" && sink.records[2].detail == "completed"
+           && sink.records[2].durationSec == 1500, "focus completed 25m")
+    expect(sink.records[3].detail == "interrupted" && sink.records[3].durationSec == 180,
+           "focus interrupted 3m")
+
+    // 未开段时 ended 不记
+    tr.pomodoroEnded(completed: true, at: at(9999))
+    expect(sink.records.count == 4, "无开段 ended 不产生记录")
+
+    // flush 收尾未结束的 caffeine 段
+    tr.caffeine(changedTo: "basic", at: at(5000))
+    tr.flush(at: at(5050))
+    expect(sink.records.count == 5 && sink.records[4].detail == "basic"
+           && sink.records[4].durationSec == 50, "flush 关掉未结束 caffeine 段")
+
+    // recent 最新在前
+    let r = sink.recent(2)
+    expect(r.count == 2 && r[0].durationSec == 50, "recent 最新在前")
+}
+
+// 13. CSVHistorySink：写两条 → 读回 round-trip（临时文件）
+do {
+    let tmp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("caf-hist-\(getpid()).csv")
+    try? FileManager.default.removeItem(at: tmp)
+    let sink = CSVHistorySink(url: tmp)
+    let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+    sink.append(HistoryRecord(type: "caffeine", start: t0, end: t0.addingTimeInterval(2400), detail: "enhanced"))
+    sink.append(HistoryRecord(type: "focus", start: t0, end: t0.addingTimeInterval(1500), detail: "completed"))
+    let back = sink.recent(10)
+    expect(back.count == 2, "CSV 读回两条")
+    expect(back[0].type == "focus" && back[0].detail == "completed" && back[0].durationSec == 1500,
+           "最新一条 focus completed 25m（最新在前）")
+    expect(back[1].type == "caffeine" && back[1].detail == "enhanced" && back[1].durationSec == 2400,
+           "第二条 caffeine enhanced 40m")
+    // 新 sink 指向同文件应读到同样内容（持久化）
+    let reopened = CSVHistorySink(url: tmp).recent(10)
+    expect(reopened.count == 2, "重新打开仍能读到（已落盘）")
+    try? FileManager.default.removeItem(at: tmp)
 }
 
 if failures > 0 {

@@ -43,12 +43,25 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// menubar 展示用：最近若干条运行历史（最新在前）。
+    @Published private(set) var recentHistory: [HistoryRecord] = []
+
     private let defaults = UserDefaults.standard
     private var ticker: Timer?
     private var caffeineElevatedByPomodoro = false
     private let focusLinker = FocusLinker(vendor: ShortcutsFocusVendor())
+    private let historySink = CSVHistorySink(url: CSVHistorySink.defaultURL)
+    private lazy var historyTracker = HistoryTracker(sink: historySink)
     private var cancellables = Set<AnyCancellable>()
     private var controlServer: ControlServer?
+
+    private static func modeCSV(_ m: CaffeineController.Mode) -> String {
+        switch m { case .off: return "off"; case .basic: return "basic"; case .enhanced: return "enhanced" }
+    }
+    /// menubar 取 6 条，CLI 取更多——这里只刷新 menubar 镜像。
+    private func refreshHistory() { recentHistory = historySink.recent(6) }
+    /// 供 ControlServer/CLI 用：最近 n 条。
+    func history(_ n: Int) -> [HistoryRecord] { historySink.recent(n) }
 
     init() {
         let focus = defaults.object(forKey: "focusMinutes") as? Int ?? 25
@@ -68,6 +81,20 @@ final class AppState: ObservableObject {
         caffeine.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
+        // 咖啡因档位变化 → 记历史（覆盖手动与自动所有改档路径）
+        caffeine.$mode
+            .removeDuplicates()
+            .sink { [weak self] mode in
+                guard let self else { return }
+                self.historyTracker.caffeine(changedTo: Self.modeCSV(mode), at: Date())
+                self.refreshHistory()
+            }
+            .store(in: &cancellables)
+        // App 退出：收尾未结束的咖啡因段
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.historyTracker.flush(at: Date()) }
+        recentHistory = historySink.recent(6)
         requestNotificationPermission()
         controlServer = ControlServer(state: self)
         controlServer?.start()
@@ -80,6 +107,7 @@ final class AppState: ObservableObject {
             caffeineElevatedByPomodoro = true
         }
         engine.startFocus()
+        historyTracker.pomodoroBegan("focus", at: Date())
         syncFromEngine()
         startTicker()
     }
@@ -88,10 +116,13 @@ final class AppState: ObservableObject {
     func resume() { engine.resume(); syncFromEngine() }
 
     func reset() {
+        let wasRunning = engine.phase != .idle
         engine.reset()
+        if wasRunning { historyTracker.pomodoroEnded(completed: false, at: Date()) }
         syncFromEngine()
         stopTicker()
         restoreCaffeineIfNeeded()
+        refreshHistory()
     }
 
     private func startTicker() {
@@ -127,7 +158,10 @@ final class AppState: ObservableObject {
     }
 
     private func phaseDidEnd(_ ended: PomodoroEngine.Phase) {
+        let now = Date()
+        historyTracker.pomodoroEnded(completed: true, at: now)  // 自然走完 → completed
         if ended == .focus {
+            historyTracker.pomodoroBegan("rest", at: now)       // 紧接进入休息段
             // 专注结束进入休息：先关掉系统 Focus，关完再发「专注结束」通知，
             // 否则通知会被勿扰吞掉。未开启联动时 disengage 会立即跑回调。
             focusLinker.disengage(then: { [weak self] in self?.notify(ended) })
@@ -135,6 +169,7 @@ final class AppState: ObservableObject {
             notify(ended)
             restoreCaffeineIfNeeded()
         }
+        refreshHistory()
     }
 
     /// 番茄钟自动开启的防休眠，整个周期结束（或重置）时恢复为关

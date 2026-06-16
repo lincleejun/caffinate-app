@@ -45,12 +45,15 @@ public struct ControlResponse: Codable, Equatable {
     public var message: String?
     public var error: String?
     public var state: ControlState?
+    public var history: [HistoryRecord]?
 
-    public init(ok: Bool, message: String? = nil, error: String? = nil, state: ControlState? = nil) {
+    public init(ok: Bool, message: String? = nil, error: String? = nil,
+                state: ControlState? = nil, history: [HistoryRecord]? = nil) {
         self.ok = ok
         self.message = message
         self.error = error
         self.state = state
+        self.history = history
     }
 }
 
@@ -100,6 +103,7 @@ public enum CLIParse {
       caf set auto-caf on|off 专注时自动防休眠
       caf set auto-off <0|1|2|4|8>  防休眠 N 小时自动关（0=从不）
       caf set focus-link on|off 专注时联动系统 Focus（静音通知，需快捷指令）
+      caf history [n]         运行历史（默认最近 20 条）
       caf help                本说明
     """
 
@@ -119,6 +123,14 @@ public enum CLIParse {
             }
         case "off":
             return .run(.init(request: .init(command: "caffeine", args: ["off"])))
+        case "history":
+            switch argv.dropFirst().first {
+            case nil:
+                return .run(.init(request: .init(command: "history")))
+            case let arg?:
+                guard let n = Int(arg), n > 0 else { return .failure("history 条数需为正整数") }
+                return .run(.init(request: .init(command: "history", args: [String(n)])))
+            }
         case "pomo":
             return .run(.init(request: .init(command: "pomo-start")))
         case "pause":

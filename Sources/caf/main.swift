@@ -78,6 +78,11 @@ func fmtTime(_ seconds: Int) -> String {
 
 func render(_ resp: ControlResponse) {
     if let message = resp.message { print(message) }
+    if let history = resp.history {
+        if history.isEmpty { print("（暂无运行历史）") }
+        else { for r in history { print(r.display) } }
+        return
+    }
     guard let s = resp.state else { return }
 
     let mode = ["off": "关", "basic": "基础", "enhanced": "增强"][s.caffeineMode] ?? s.caffeineMode
