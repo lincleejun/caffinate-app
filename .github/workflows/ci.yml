@@ -33,7 +33,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # v0.* 自动标记为 pre-release
+          PRERELEASE=""
+          case "${GITHUB_REF_NAME}" in
+            v0.*) PRERELEASE="--prerelease" ;;
+          esac
           gh release create "${GITHUB_REF_NAME}" \
             Caffinate.app.zip caf \
+            $PRERELEASE \
             --title "${GITHUB_REF_NAME}" \
             --notes "未签名构建。首次打开:右键 App → 打开(或 \`xattr -dr com.apple.quarantine Caffinate.app\`)。CLI: \`sudo cp caf /usr/local/bin/\`。"

@@ -1,5 +1,9 @@
 # Caffinate ☕🍅
 
+[![CI](https://github.com/lincleejun/caffinate-app/actions/workflows/ci.yml/badge.svg)](https://github.com/lincleejun/caffinate-app/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/lincleejun/caffinate-app?include_prereleases&sort=semver)](https://github.com/lincleejun/caffinate-app/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 轻量 macOS 菜单栏效率小助手：防休眠 + 番茄钟。原生 SwiftUI，零依赖，无需 Xcode。
 
 ## 功能
