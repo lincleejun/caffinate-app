@@ -8,39 +8,39 @@ struct OnboardingView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("欢迎使用 Caffinate ☕🍅")
+                Text("Welcome to Caffinate ☕🍅")
                     .font(.system(.headline, design: .rounded))
                     .foregroundStyle(Theme.coffee)
-                Text("防休眠 + 番茄钟,菜单栏常驻,也能用 caf 命令行控制。")
+                Text("Keep-awake + pomodoro, lives in the menu bar, also driven by the caf CLI.")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             }
 
-            row(icon: "cup.and.saucer.fill", title: "防休眠三档",
-                desc: "基础挡熄屏/休眠;增强额外重置系统空闲,需「辅助功能」授权。") {
+            row(icon: "cup.and.saucer.fill", title: "Three keep-awake modes",
+                desc: "Basic blocks display/system sleep; Enhanced also resets the idle timer, needs Accessibility.") {
                 if !axTrusted {
-                    Button("去授权辅助功能") { CaffeineController.openAccessibilitySettings() }
+                    Button("Grant Accessibility") { CaffeineController.openAccessibilitySettings() }
                         .buttonStyle(.link).font(.caption).tint(Theme.coffee)
                 } else {
-                    Text("辅助功能已授权 ✓").font(.caption2).foregroundStyle(Theme.textSecondary)
+                    Text("Accessibility granted ✓").font(.caption2).foregroundStyle(Theme.textSecondary)
                 }
             }
 
-            row(icon: "timer", title: "番茄钟 + 历史",
-                desc: "25/5 可调,菜单栏显示倒计时;运行历史自动记录,可在下方与 caf history 查看。") {
+            row(icon: "timer", title: "Pomodoro + history",
+                desc: "25/5 adjustable, countdown in the menu bar; runs are logged automatically, view below or with caf history.") {
                 EmptyView()
             }
 
-            row(icon: "moon.fill", title: "专注时联动系统 Focus(可选)",
-                desc: "专注时自动开系统勿扰静音通知。需先在「快捷指令」建好,详见 README。") {
-                Toggle("开启联动", isOn: $state.linkSystemFocus)
+            row(icon: "moon.fill", title: "Link system Focus while focusing (optional)",
+                desc: "Auto-enables Do Not Disturb while focusing. Set up Shortcuts first — see README.") {
+                Toggle("Enable linking", isOn: $state.linkSystemFocus)
                     .font(.caption).toggleStyle(.switch).controlSize(.mini)
             }
 
             Button {
                 state.didOnboard = true
             } label: {
-                Text("开始使用")
+                Text("Get started")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)

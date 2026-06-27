@@ -40,9 +40,9 @@ struct PomodoroCard: View {
 
     private var phaseLabel: String {
         switch state.phase {
-        case .idle: return "准备就绪"
-        case .focus: return state.isPaused ? "专注 · 已暂停" : "专注中"
-        case .rest: return state.isPaused ? "休息 · 已暂停" : "休息中"
+        case .idle: return String(localized: "Ready")
+        case .focus: return state.isPaused ? String(localized: "Focus · Paused") : String(localized: "Focusing")
+        case .rest: return state.isPaused ? String(localized: "Break · Paused") : String(localized: "Resting")
         }
     }
 
@@ -53,7 +53,7 @@ struct PomodoroCard: View {
                 Button {
                     state.startFocus()
                 } label: {
-                    Label("开始专注", systemImage: "play.fill")
+                    Label("Start Focus", systemImage: "play.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)

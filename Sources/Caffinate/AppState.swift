@@ -211,15 +211,15 @@ final class AppState: ObservableObject {
     }
 
     private func notify(_ ended: PomodoroEngine.Phase) {
-        NSSound(named: "Glass")?.play()
+        NSSound(named: "Ping")?.play()   // 清脆「叮」提示音
         guard canUseNotifications else { return }
         let content = UNMutableNotificationContent()
         if ended == .focus {
-            content.title = "专注结束 🍅"
-            content.body = "干得漂亮，休息 \(restMinutes) 分钟吧"
+            content.title = String(localized: "Focus done 🍅")
+            content.body = String(localized: "Nice work — take a \(restMinutes) min break")
         } else {
-            content.title = "休息结束 ☕"
-            content.body = "来开始下一个番茄？"
+            content.title = String(localized: "Break over ☕")
+            content.body = String(localized: "Ready for the next pomodoro?")
         }
         content.sound = .default
         UNUserNotificationCenter.current().add(

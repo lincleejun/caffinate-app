@@ -38,7 +38,7 @@ struct PopoverView: View {
 
             HStack {
                 Spacer()
-                Button("退出") { NSApp.terminate(nil) }
+                Button("Quit") { NSApp.terminate(nil) }
                     .buttonStyle(.plain)
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)

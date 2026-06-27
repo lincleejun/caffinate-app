@@ -9,11 +9,20 @@ final class CaffeineController: ObservableObject {
     enum Mode: Int, CaseIterable, Identifiable, Hashable {
         case off = 0, basic = 1, enhanced = 2
         var id: Int { rawValue }
+        /// GUI 本地化文案（随系统语言）。
         var label: String {
             switch self {
-            case .off: return "关"
-            case .basic: return "基础"
-            case .enhanced: return "增强"
+            case .off: return String(localized: "Off")
+            case .basic: return String(localized: "Basic")
+            case .enhanced: return String(localized: "Enhanced")
+            }
+        }
+        /// CLI 固定英文标签（caf / 控制响应用，不随系统语言）。
+        var cliLabel: String {
+            switch self {
+            case .off: return "Off"
+            case .basic: return "Basic"
+            case .enhanced: return "Enhanced"
             }
         }
     }
@@ -53,7 +62,7 @@ final class CaffeineController: ObservableObject {
             // 弹系统授权请求：会把当前二进制登记到辅助功能列表
             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
             AXIsProcessTrustedWithOptions(options)
-            lastError = "增强档需要「辅助功能」权限，已弹出系统授权请求"
+            lastError = String(localized: "Enhanced mode needs Accessibility permission — system prompt opened")
             return
         }
 
@@ -95,11 +104,11 @@ final class CaffeineController: ObservableObject {
         let result = IOPMAssertionCreateWithName(
             kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
-            "Caffinate 防休眠" as CFString,
+            "Caffinate keep-awake" as CFString,
             &id
         )
         guard result == kIOReturnSuccess else {
-            lastError = "防休眠开启失败 (IOKit \(result))"
+            lastError = String(localized: "Failed to enable keep-awake (IOKit \(Int(result)))")
             return false
         }
         assertionID = id

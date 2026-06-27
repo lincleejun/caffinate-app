@@ -1,0 +1,65 @@
+/* Caffinate 简体中文 — 键为代码中的英文字面量（开发语言 en 为兜底） */
+
+/* CaffeineController / CaffeineCard */
+"Off" = "关";
+"Basic" = "基础";
+"Enhanced" = "增强";
+"Caffeine" = "咖啡因";
+"Enhanced mode needs Accessibility — open Settings" = "增强档需授权「辅助功能」，点此前往";
+"Enhanced mode needs Accessibility permission — system prompt opened" = "增强档需要「辅助功能」权限，已弹出系统授权请求";
+"Failed to enable keep-awake (IOKit %lld)" = "防休眠开启失败（IOKit %lld）";
+"Sleeps normally per system settings" = "电脑按系统设置正常休眠";
+"Display sleep & system sleep blocked" = "已阻止熄屏与休眠";
+"Sleep blocked + idle timer reset every 50s" = "已阻止熄屏 + 每 50 秒重置空闲计时";
+
+/* PomodoroCard */
+"Ready" = "准备就绪";
+"Focus · Paused" = "专注 · 已暂停";
+"Focusing" = "专注中";
+"Break · Paused" = "休息 · 已暂停";
+"Resting" = "休息中";
+"Start Focus" = "开始专注";
+
+/* PopoverView */
+"Quit" = "退出";
+
+/* SettingsView */
+"Settings" = "设置";
+"Focus: %lld min" = "专注：%lld 分钟";
+"Break: %lld min" = "休息：%lld 分钟";
+"Auto keep-awake while focusing" = "专注时自动防休眠";
+"Silence notifications while focusing (link system Focus)" = "专注时静音通知（联动系统 Focus）";
+"Create “Caffinate Focus On” and “Caffinate Focus Off” in the Shortcuts app" = "需在「快捷指令」中建立 “Caffinate Focus On” 与 “Caffinate Focus Off”";
+"Auto-disable keep-awake" = "防休眠自动关闭";
+"Never" = "从不";
+"1 hour" = "1 小时";
+"2 hours" = "2 小时";
+"4 hours" = "4 小时";
+"8 hours" = "8 小时";
+"Launch at login" = "登录时启动";
+
+/* OnboardingView */
+"Welcome to Caffinate ☕🍅" = "欢迎使用 Caffinate ☕🍅";
+"Keep-awake + pomodoro, lives in the menu bar, also driven by the caf CLI." = "防休眠 + 番茄钟，菜单栏常驻，也能用 caf 命令行控制。";
+"Three keep-awake modes" = "防休眠三档";
+"Basic blocks display/system sleep; Enhanced also resets the idle timer, needs Accessibility." = "基础挡熄屏/休眠；增强额外重置系统空闲，需「辅助功能」授权。";
+"Grant Accessibility" = "去授权辅助功能";
+"Accessibility granted ✓" = "辅助功能已授权 ✓";
+"Pomodoro + history" = "番茄钟 + 历史";
+"25/5 adjustable, countdown in the menu bar; runs are logged automatically, view below or with caf history." = "25/5 可调，菜单栏显示倒计时；运行历史自动记录，可在下方与 caf history 查看。";
+"Link system Focus while focusing (optional)" = "专注时联动系统 Focus（可选）";
+"Auto-enables Do Not Disturb while focusing. Set up Shortcuts first — see README." = "专注时自动开系统勿扰静音通知。需先在「快捷指令」建好，详见 README。";
+"Enable linking" = "开启联动";
+"Get started" = "开始使用";
+
+/* HistoryCard */
+"History" = "历史";
+"No runs yet" = "暂无运行记录";
+"🍅 Focus · %@ %@" = "🍅 专注 · %@ %@";
+"🍵 Break · %@ %@" = "🍵 休息 · %@ %@";
+
+/* AppState — notifications */
+"Focus done 🍅" = "专注结束 🍅";
+"Nice work — take a %lld min break" = "干得漂亮，休息 %lld 分钟吧";
+"Break over ☕" = "休息结束 ☕";
+"Ready for the next pomodoro?" = "准备开始下一个番茄？";

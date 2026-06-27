@@ -6,34 +6,34 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("设置")
+            Text("Settings")
                 .font(.headline)
                 .foregroundStyle(Theme.textPrimary)
 
-            Stepper("专注：\(state.focusMinutes) 分钟",
+            Stepper("Focus: \(state.focusMinutes) min",
                     value: $state.focusMinutes, in: 1...120)
-            Stepper("休息：\(state.restMinutes) 分钟",
+            Stepper("Break: \(state.restMinutes) min",
                     value: $state.restMinutes, in: 1...60)
 
-            Toggle("专注时自动防休眠", isOn: $state.autoCaffeinate)
+            Toggle("Auto keep-awake while focusing", isOn: $state.autoCaffeinate)
 
-            Toggle("专注时静音通知（联动系统 Focus）", isOn: $state.linkSystemFocus)
+            Toggle("Silence notifications while focusing (link system Focus)", isOn: $state.linkSystemFocus)
             if state.linkSystemFocus {
-                Text("需在「快捷指令」中建立 “Caffinate Focus On” 与 “Caffinate Focus Off”")
+                Text("Create “Caffinate Focus On” and “Caffinate Focus Off” in the Shortcuts app")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             }
 
-            Picker("防休眠自动关闭", selection: $state.autoOffHours) {
-                Text("从不").tag(0.0)
-                Text("1 小时").tag(1.0)
-                Text("2 小时").tag(2.0)
-                Text("4 小时").tag(4.0)
-                Text("8 小时").tag(8.0)
+            Picker("Auto-disable keep-awake", selection: $state.autoOffHours) {
+                Text("Never").tag(0.0)
+                Text("1 hour").tag(1.0)
+                Text("2 hours").tag(2.0)
+                Text("4 hours").tag(4.0)
+                Text("8 hours").tag(8.0)
             }
 
             if LoginItem.isAvailable {
-                Toggle("登录时启动", isOn: $launchAtLogin)
+                Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, on in
                         if !LoginItem.set(enabled: on) {
                             launchAtLogin = LoginItem.isEnabled

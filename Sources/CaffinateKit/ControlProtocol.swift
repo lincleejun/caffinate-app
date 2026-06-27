@@ -113,25 +113,25 @@ public enum CLIParse {
     }
 
     public static let usage = """
-    caf — Caffinate 命令行遥控器
+    caf — Caffinate command-line remote
 
-    用法：
-      caf                     状态总览
-      caf json                状态（JSON，脚本用）
-      caf on                  咖啡因 → 基础（防熄屏/休眠）
-      caf on max              咖啡因 → 增强（+空闲重置，需辅助功能权限）
-      caf off                 咖啡因 → 关
-      caf pomo                开始专注
-      caf pause               暂停⇄继续
-      caf reset               重置番茄钟
-      caf set focus <1-120>   专注分钟数
-      caf set rest <1-60>     休息分钟数
-      caf set auto-caf on|off 专注时自动防休眠
-      caf set auto-off <0|1|2|4|8>  防休眠 N 小时自动关（0=从不）
-      caf set focus-link on|off 专注时联动系统 Focus（静音通知，需快捷指令）
-      caf history [n]         运行历史（默认最近 20 条）
-      caf doctor              健康自检（断言/权限/快捷指令/历史）
-      caf help                本说明
+    Usage:
+      caf                     Status overview
+      caf json                Status (JSON, for scripts)
+      caf on                  Caffeine → Basic (block display/system sleep)
+      caf on max              Caffeine → Enhanced (+idle reset, needs Accessibility)
+      caf off                 Caffeine → Off
+      caf pomo                Start focus
+      caf pause               Pause ⇄ resume
+      caf reset               Reset pomodoro
+      caf set focus <1-120>   Focus minutes
+      caf set rest <1-60>     Break minutes
+      caf set auto-caf on|off Auto keep-awake while focusing
+      caf set auto-off <0|1|2|4|8>  Auto-disable keep-awake after N hours (0=never)
+      caf set focus-link on|off Link system Focus while focusing (mute notifications, needs Shortcuts)
+      caf history [n]         Run history (default last 20)
+      caf doctor              Health check (assertion/permission/shortcuts/history)
+      caf help                This help
     """
 
     public static func parse(_ argv: [String]) -> Result {
@@ -146,7 +146,7 @@ public enum CLIParse {
             switch argv.dropFirst().first {
             case nil: return .run(.init(request: .init(command: "caffeine", args: ["basic"])))
             case "max": return .run(.init(request: .init(command: "caffeine", args: ["enhanced"])))
-            case let other?: return .failure("未知档位「\(other)」，可用：caf on / caf on max")
+            case let other?: return .failure("Unknown mode “\(other)”. Use: caf on / caf on max")
             }
         case "off":
             return .run(.init(request: .init(command: "caffeine", args: ["off"])))
@@ -157,7 +157,7 @@ public enum CLIParse {
             case nil:
                 return .run(.init(request: .init(command: "history")))
             case let arg?:
-                guard let n = Int(arg), n > 0 else { return .failure("history 条数需为正整数") }
+                guard let n = Int(arg), n > 0 else { return .failure("history count must be a positive integer") }
                 return .run(.init(request: .init(command: "history", args: [String(n)])))
             }
         case "pomo":
@@ -169,43 +169,43 @@ public enum CLIParse {
         case "set":
             return parseSet(Array(argv.dropFirst()))
         case let other?:
-            return .failure("未知命令「\(other)」")
+            return .failure("Unknown command “\(other)”")
         }
     }
 
     private static func parseSet(_ args: [String]) -> Result {
         guard args.count == 2 else {
-            return .failure("set 用法：caf set <focus|rest|auto-caf|auto-off> <值>")
+            return .failure("Usage: caf set <focus|rest|auto-caf|auto-off> <value>")
         }
         let (key, value) = (args[0], args[1])
         switch key {
         case "focus":
             guard let v = Int(value), (1...120).contains(v) else {
-                return .failure("focus 取值 1-120 分钟")
+                return .failure("focus must be 1-120 min")
             }
             return .run(.init(request: .init(command: "set", args: ["focus", String(v)])))
         case "rest":
             guard let v = Int(value), (1...60).contains(v) else {
-                return .failure("rest 取值 1-60 分钟")
+                return .failure("rest must be 1-60 min")
             }
             return .run(.init(request: .init(command: "set", args: ["rest", String(v)])))
         case "auto-caf":
             guard value == "on" || value == "off" else {
-                return .failure("auto-caf 取值 on|off")
+                return .failure("auto-caf must be on|off")
             }
             return .run(.init(request: .init(command: "set", args: ["auto-caf", value])))
         case "auto-off":
             guard ["0", "1", "2", "4", "8"].contains(value) else {
-                return .failure("auto-off 取值 0|1|2|4|8 小时（0=从不）")
+                return .failure("auto-off must be 0|1|2|4|8 hours (0=never)")
             }
             return .run(.init(request: .init(command: "set", args: ["auto-off", value])))
         case "focus-link":
             guard value == "on" || value == "off" else {
-                return .failure("focus-link 取值 on|off")
+                return .failure("focus-link must be on|off")
             }
             return .run(.init(request: .init(command: "set", args: ["focus-link", value])))
         default:
-            return .failure("未知设置项「\(key)」")
+            return .failure("Unknown setting “\(key)”")
         }
     }
 }

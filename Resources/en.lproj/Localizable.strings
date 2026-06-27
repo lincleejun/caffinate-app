@@ -1,0 +1,2 @@
+/* English is the development language — UI strings come from the in-code literals.
+   This file just makes `en` a selectable localization so non-Chinese systems fall back to English. */

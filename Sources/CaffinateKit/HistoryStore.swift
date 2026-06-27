@@ -16,20 +16,26 @@ public struct HistoryRecord: Codable, Equatable {
 
     public var durationSec: Int { max(0, Int(end.timeIntervalSince(start))) }
 
-    /// 单行展示（menubar 与 CLI 共用）。
+    /// 单行展示（CLI 用，固定英文）。GUI 在 Caffinate 侧用 record 字段本地化组装。
     public var display: String {
         switch type {
         case "caffeine":
-            let mode = detail == "enhanced" ? "增强" : "基础"
-            return "☕ \(mode) · \(Self.hm(start))–\(Self.hm(end)) · \(Self.dur(durationSec))"
+            let mode = detail == "enhanced" ? "Enhanced" : "Basic"
+            return "☕ \(mode) · \(startHM)–\(endHM) · \(durationText)"
         case "focus":
-            return "🍅 专注 · \(Self.dur(durationSec)) \(detail == "completed" ? "✓" : "✗")"
+            return "🍅 Focus · \(durationText) \(detail == "completed" ? "✓" : "✗")"
         case "rest":
-            return "🍵 休息 · \(Self.dur(durationSec)) \(detail == "completed" ? "✓" : "✗")"
+            return "🍵 Break · \(durationText) \(detail == "completed" ? "✓" : "✗")"
         default:
-            return "\(type) · \(Self.dur(durationSec))"
+            return "\(type) · \(durationText)"
         }
     }
+
+    /// 供 GUI 本地化组装的零件。
+    public var startHM: String { Self.hm(start) }
+    public var endHM: String { Self.hm(end) }
+    public var durationText: String { Self.dur(durationSec) }
+    public var completed: Bool { detail == "completed" }
 
     private static let hmFormatter: DateFormatter = {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")

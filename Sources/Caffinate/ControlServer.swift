@@ -80,11 +80,11 @@ final class ControlServer {
                 MainActor.assumeIsolated { self.execute(request) }
             }
         } else {
-            response = ControlResponse(ok: false, error: "无法解析请求")
+            response = ControlResponse(ok: false, error: "Could not parse request")
         }
 
         var out = (try? JSONEncoder().encode(response))
-            ?? Data(#"{"ok":false,"error":"响应编码失败"}"#.utf8)
+            ?? Data(#"{"ok":false,"error":"Response encoding failed"}"#.utf8)
         out.append(0x0A)
         out.withUnsafeBytes { _ = write(client, $0.baseAddress, $0.count) }
     }
@@ -94,7 +94,7 @@ final class ControlServer {
     @MainActor
     private func execute(_ request: ControlRequest) -> ControlResponse {
         guard let state else {
-            return ControlResponse(ok: false, error: "App 状态不可用")
+            return ControlResponse(ok: false, error: "App state unavailable")
         }
         switch request.command {
         case "status":
@@ -115,77 +115,77 @@ final class ControlServer {
             case "enhanced": target = .enhanced
             default: target = nil
             }
-            guard let target else { return ControlResponse(ok: false, error: "无效档位") }
+            guard let target else { return ControlResponse(ok: false, error: "Invalid mode") }
             state.caffeine.set(target)
             guard state.caffeine.mode == target else {
-                return ControlResponse(ok: false, error: state.caffeine.lastError ?? "切换失败",
+                return ControlResponse(ok: false, error: state.caffeine.lastError ?? "Switch failed",
                                        state: snapshot(state))
             }
-            return success(state, "咖啡因 → \(target.label)")
+            return success(state, "Caffeine → \(target.cliLabel)")
 
         case "pomo-start":
             state.startFocus()
-            return success(state, "开始专注 \(state.focusMinutes) 分钟 🍅")
+            return success(state, "Focus started: \(state.focusMinutes) min 🍅")
 
         case "pomo-pause":
             guard state.phase != .idle else {
-                return ControlResponse(ok: false, error: "番茄钟未在运行", state: snapshot(state))
+                return ControlResponse(ok: false, error: "Pomodoro not running", state: snapshot(state))
             }
             if state.isPaused {
                 state.resume()
-                return success(state, "已继续")
+                return success(state, "Resumed")
             }
             state.pause()
-            return success(state, "已暂停")
+            return success(state, "Paused")
 
         case "pomo-reset":
             state.reset()
-            return success(state, "已重置")
+            return success(state, "Reset")
 
         case "set":
             return executeSet(request.args, state: state)
 
         default:
-            return ControlResponse(ok: false, error: "未知命令「\(request.command)」")
+            return ControlResponse(ok: false, error: "Unknown command “\(request.command)”")
         }
     }
 
     @MainActor
     private func executeSet(_ args: [String], state: AppState) -> ControlResponse {
-        guard args.count == 2 else { return ControlResponse(ok: false, error: "set 需要两个参数") }
+        guard args.count == 2 else { return ControlResponse(ok: false, error: "set needs two arguments") }
         switch args[0] {
         case "focus":
             guard let v = Int(args[1]), (1...120).contains(v) else {
-                return ControlResponse(ok: false, error: "focus 取值 1-120")
+                return ControlResponse(ok: false, error: "focus must be 1-120")
             }
             state.focusMinutes = v
-            return success(state, "专注时长 → \(v) 分钟")
+            return success(state, "Focus duration → \(v) min")
         case "rest":
             guard let v = Int(args[1]), (1...60).contains(v) else {
-                return ControlResponse(ok: false, error: "rest 取值 1-60")
+                return ControlResponse(ok: false, error: "rest must be 1-60")
             }
             state.restMinutes = v
-            return success(state, "休息时长 → \(v) 分钟")
+            return success(state, "Break duration → \(v) min")
         case "auto-caf":
             guard args[1] == "on" || args[1] == "off" else {
-                return ControlResponse(ok: false, error: "auto-caf 取值 on|off")
+                return ControlResponse(ok: false, error: "auto-caf must be on|off")
             }
             state.autoCaffeinate = (args[1] == "on")
-            return success(state, "专注自动防休眠 → \(args[1] == "on" ? "开" : "关")")
+            return success(state, "Auto keep-awake while focusing → \(args[1] == "on" ? "on" : "off")")
         case "auto-off":
             guard let v = Double(args[1]), [0, 1, 2, 4, 8].contains(v) else {
-                return ControlResponse(ok: false, error: "auto-off 取值 0|1|2|4|8")
+                return ControlResponse(ok: false, error: "auto-off must be 0|1|2|4|8")
             }
             state.autoOffHours = v
-            return success(state, "自动关闭 → \(v == 0 ? "从不" : "\(Int(v)) 小时")")
+            return success(state, "Auto-disable → \(v == 0 ? "never" : "\(Int(v))h")")
         case "focus-link":
             guard args[1] == "on" || args[1] == "off" else {
-                return ControlResponse(ok: false, error: "focus-link 取值 on|off")
+                return ControlResponse(ok: false, error: "focus-link must be on|off")
             }
             state.linkSystemFocus = (args[1] == "on")
-            return success(state, "专注联动系统 Focus → \(args[1] == "on" ? "开" : "关")")
+            return success(state, "Link system Focus → \(args[1] == "on" ? "on" : "off")")
         default:
-            return ControlResponse(ok: false, error: "未知设置项「\(args[0])」")
+            return ControlResponse(ok: false, error: "Unknown setting “\(args[0])”")
         }
     }
 

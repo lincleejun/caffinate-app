@@ -11,7 +11,7 @@ struct CaffeineCard: View {
             HStack(spacing: 6) {
                 Image(systemName: "cup.and.saucer.fill")
                     .foregroundStyle(Theme.coffee)
-                Text("咖啡因")
+                Text("Caffeine")
                     .font(.headline)
                     .foregroundStyle(Theme.textPrimary)
             }
@@ -35,7 +35,7 @@ struct CaffeineCard: View {
                 Button {
                     CaffeineController.openAccessibilitySettings()
                 } label: {
-                    Label("增强档需授权「辅助功能」，点此前往", systemImage: "lock.shield")
+                    Label("Enhanced mode needs Accessibility — open Settings", systemImage: "lock.shield")
                         .font(.caption)
                 }
                 .buttonStyle(.link)
@@ -53,9 +53,9 @@ struct CaffeineCard: View {
 
     private var statusText: String {
         switch state.caffeine.mode {
-        case .off: return "电脑按系统设置正常休眠"
-        case .basic: return "已阻止熄屏与休眠"
-        case .enhanced: return "已阻止熄屏 + 每 50 秒重置空闲计时"
+        case .off: return String(localized: "Sleeps normally per system settings")
+        case .basic: return String(localized: "Display sleep & system sleep blocked")
+        case .enhanced: return String(localized: "Sleep blocked + idle timer reset every 50s")
         }
     }
 }

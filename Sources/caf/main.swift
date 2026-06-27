@@ -80,48 +80,48 @@ func render(_ resp: ControlResponse) {
     if let message = resp.message { print(message) }
     if let d = resp.diagnostics {
         func mark(_ ok: Bool) -> String { ok ? "✅" : "⚠️" }
-        let mode = ["off": "关", "basic": "基础", "enhanced": "增强"][d.caffeineMode] ?? d.caffeineMode
-        print("🩺 Caffinate 自检")
-        print("  咖啡因档位：\(mode)")
-        print("  \(mark(d.caffeineMode == "off" || d.holdsAssertion)) 防休眠断言：\(d.holdsAssertion ? "持有中" : (d.caffeineMode == "off" ? "未开启（正常）" : "未持有⚠️"))")
-        print("  \(mark(d.accessibilityTrusted)) 辅助功能授权：\(d.accessibilityTrusted ? "已授权" : "未授权（增强档不可用）")")
-        print("  \(mark(!d.linkSystemFocus || d.focusShortcutsInstalled)) 专注联动 Focus：\(d.linkSystemFocus ? "开" : "关")\(d.linkSystemFocus ? (d.focusShortcutsInstalled ? "（快捷指令就绪）" : "（缺快捷指令⚠️）") : "")")
-        print("  \(mark(d.historyWritable)) 历史可写：\(d.historyWritable ? "是" : "否")")
-        print("  历史文件：\(d.historyPath)")
+        let mode = ["off": "Off", "basic": "Basic", "enhanced": "Enhanced"][d.caffeineMode] ?? d.caffeineMode
+        print("🩺 Caffinate doctor")
+        print("  Caffeine mode: \(mode)")
+        print("  \(mark(d.caffeineMode == "off" || d.holdsAssertion)) Keep-awake assertion: \(d.holdsAssertion ? "held" : (d.caffeineMode == "off" ? "off (normal)" : "not held⚠️"))")
+        print("  \(mark(d.accessibilityTrusted)) Accessibility: \(d.accessibilityTrusted ? "granted" : "not granted (Enhanced unavailable)")")
+        print("  \(mark(!d.linkSystemFocus || d.focusShortcutsInstalled)) Link system Focus: \(d.linkSystemFocus ? "on" : "off")\(d.linkSystemFocus ? (d.focusShortcutsInstalled ? " (shortcuts ready)" : " (shortcuts missing⚠️)") : "")")
+        print("  \(mark(d.historyWritable)) History writable: \(d.historyWritable ? "yes" : "no")")
+        print("  History file: \(d.historyPath)")
         return
     }
     if let history = resp.history {
-        if history.isEmpty { print("（暂无运行历史）") }
+        if history.isEmpty { print("(no run history yet)") }
         else { for r in history { print(r.display) } }
         return
     }
     guard let s = resp.state else { return }
 
-    let mode = ["off": "关", "basic": "基础", "enhanced": "增强"][s.caffeineMode] ?? s.caffeineMode
+    let mode = ["off": "Off", "basic": "Basic", "enhanced": "Enhanced"][s.caffeineMode] ?? s.caffeineMode
     let modeDetail: String
     switch s.caffeineMode {
-    case "basic": modeDetail = "（已阻止熄屏与休眠）"
-    case "enhanced": modeDetail = "（已阻止熄屏 + 空闲重置）"
+    case "basic": modeDetail = " (display & system sleep blocked)"
+    case "enhanced": modeDetail = " (sleep blocked + idle reset)"
     default: modeDetail = ""
     }
-    print("☕ 咖啡因：\(mode)\(modeDetail)")
+    print("☕ Caffeine: \(mode)\(modeDetail)")
 
     switch s.phase {
     case "idle":
-        print("🍅 番茄钟：就绪（专注 \(s.focusMinutes) 分钟）")
+        print("🍅 Pomodoro: ready (focus \(s.focusMinutes) min)")
     default:
-        let label = s.phase == "focus" ? "专注" : "休息"
-        let pause = s.isPaused ? " · 已暂停" : "中"
+        let label = s.phase == "focus" ? "Focus" : "Break"
+        let pause = s.isPaused ? " · paused" : ""
         let total = (s.phase == "focus" ? s.focusMinutes : s.restMinutes) * 60
-        print("🍅 番茄钟：\(label)\(pause) \(fmtTime(s.remainingSeconds)) / \(fmtTime(total))")
+        print("🍅 Pomodoro: \(label)\(pause) \(fmtTime(s.remainingSeconds)) / \(fmtTime(total))")
     }
 
-    let autoOff = s.autoOffHours == 0 ? "从不" : "\(Int(s.autoOffHours))h"
-    print("⚙️ 设置：专注 \(s.focusMinutes)min · 休息 \(s.restMinutes)min"
-          + " · 自动防休眠 \(s.autoCaffeinate ? "开" : "关") · 自动关闭 \(autoOff)"
-          + " · 专注联动 Focus \(s.linkSystemFocus ? "开" : "关")")
+    let autoOff = s.autoOffHours == 0 ? "never" : "\(Int(s.autoOffHours))h"
+    print("⚙️ Settings: focus \(s.focusMinutes)min · break \(s.restMinutes)min"
+          + " · auto keep-awake \(s.autoCaffeinate ? "on" : "off") · auto-off \(autoOff)"
+          + " · link Focus \(s.linkSystemFocus ? "on" : "off")")
     if !s.accessibilityTrusted {
-        print("⚠️ 辅助功能未授权：增强档不可用（系统设置 → 隐私与安全性 → 辅助功能）")
+        print("⚠️ Accessibility not granted: Enhanced unavailable (System Settings → Privacy & Security → Accessibility)")
     }
 }
 
@@ -137,14 +137,14 @@ case .help:
     exit(0)
 
 case .failure(let reason):
-    stderrLine("错误：\(reason)")
+    stderrLine("Error: \(reason)")
     stderrLine("")
     stderrLine(CLIParse.usage)
     exit(1)
 
 case .run(let parsed):
     guard let resp = roundTripAutoLaunch(parsed.request) else {
-        stderrLine("无法连接 Caffinate（App 拉起超时或通信失败）")
+        stderrLine("Could not reach Caffinate (app launch timed out or comms failed)")
         exit(2)
     }
     if parsed.rawOutput {
@@ -154,7 +154,7 @@ case .run(let parsed):
             print(String(decoding: data, as: UTF8.self))
         }
     } else {
-        if !resp.ok, let error = resp.error { stderrLine("错误：\(error)") }
+        if !resp.ok, let error = resp.error { stderrLine("Error: \(error)") }
         render(resp)
     }
     exit(resp.ok ? 0 : 1)

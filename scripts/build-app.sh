@@ -12,6 +12,11 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/Caffinate "$APP/Contents/MacOS/Caffinate"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
+# 语言包（随系统切换，开发语言 en 兜底）
+for lproj in Resources/*.lproj; do
+    cp -R "$lproj" "$APP/Contents/Resources/"
+done
+
 cat > "$APP/Contents/Info.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -20,6 +25,13 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
 <dict>
     <key>CFBundleIdentifier</key>
     <string>com.lijun.caffinate</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>zh-Hans</string>
+    </array>
     <key>CFBundleName</key>
     <string>Caffinate</string>
     <key>CFBundleDisplayName</key>
