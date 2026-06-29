@@ -37,6 +37,7 @@
 "4 hours" = "4 小时";
 "8 hours" = "8 小时";
 "Launch at login" = "登录时启动";
+"Check for Updates…" = "检查更新…";
 
 /* OnboardingView */
 "Welcome to Caffinate ☕🍅" = "欢迎使用 Caffinate ☕🍅";

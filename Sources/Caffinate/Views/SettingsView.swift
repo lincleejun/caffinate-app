@@ -2,7 +2,14 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var state: AppState
+    @EnvironmentObject var updater: UpdaterModel
     @State private var launchAtLogin = LoginItem.isEnabled
+
+    private var versionText: String {
+        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+        return "v\(short) (\(build))"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -39,6 +46,17 @@ struct SettingsView: View {
                             launchAtLogin = LoginItem.isEnabled
                         }
                     }
+            }
+
+            Divider()
+
+            HStack {
+                Button("Check for Updates…") { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
+                Spacer()
+                Text(versionText)
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
             }
         }
         .font(.callout)
