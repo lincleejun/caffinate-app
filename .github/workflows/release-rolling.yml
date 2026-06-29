@@ -29,7 +29,13 @@ jobs:
           fetch-depth: 0
 
       - name: Run tests
-        run: swift run caffinate-tests
+        # 用 release 产物 + 自己 ad-hoc 重签后直接执行，而不是 `swift run`：
+        # runner 的 amfid 会杀掉 SwiftPM 生成的带调试 entitlement 的 ad-hoc 二进制
+        # （Killed: 9 / exit 137）。重签保证签名有效；release 构建同时预热后续打包。
+        run: |
+          swift build -c release --product caffinate-tests
+          codesign --force --sign - .build/release/caffinate-tests
+          .build/release/caffinate-tests
 
       - name: Build app bundle (ad-hoc, 无证书 + 内嵌 Sparkle)
         run: ./scripts/build-app.sh
