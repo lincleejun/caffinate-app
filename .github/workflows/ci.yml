@@ -13,7 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
-        run: swift run caffinate-tests
+        # 用 release 产物 + 自己 ad-hoc 重签后直接执行，而不是 `swift run`：
+        # 引入 Sparkle 后 runner 的 amfid 会杀掉 SwiftPM 生成的带调试 entitlement
+        # 的 ad-hoc 二进制（Killed: 9 / exit 137）。重签保证签名有效。
+        run: |
+          swift build -c release --product caffinate-tests
+          codesign --force --sign - .build/release/caffinate-tests
+          .build/release/caffinate-tests
 
   release:
     needs: test
@@ -23,6 +29,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # build-app.sh 用 git rev-list/describe 派生版本号，需全量历史与 tag
+          fetch-depth: 0
       - name: Build app bundle (ad-hoc signed)
         run: ./scripts/build-app.sh
       - name: Package artifacts
