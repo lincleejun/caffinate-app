@@ -20,7 +20,9 @@ SU_PUBLIC_ED_KEY="${SU_PUBLIC_ED_KEY:-bzbmCcjtB+lV0qzEfUoB/+Zvly26N+vrpYcuM6t9+b
 
 # ---- 版本派生 ----
 BUILD_NUMBER="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
-SHORT_VERSION="$(git describe --tags --always --dirty 2>/dev/null | sed 's/^v//')"
+# --match 'v*'：只认 vX.Y.Z 版本 tag，忽略 workflow 自己打的滚动 tag
+# release-latest（否则 describe 自我引用，版本号变成 release-latest-N-g…）。
+SHORT_VERSION="$(git describe --tags --always --dirty --match 'v*' 2>/dev/null | sed 's/^v//')"
 [ -n "$SHORT_VERSION" ] || SHORT_VERSION="0.0.0"
 echo "→ 版本：short=$SHORT_VERSION  build=$BUILD_NUMBER"
 
