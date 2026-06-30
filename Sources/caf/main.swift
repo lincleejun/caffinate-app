@@ -86,6 +86,9 @@ func render(_ resp: ControlResponse) {
         print("  \(mark(d.caffeineMode == "off" || d.holdsAssertion)) Keep-awake assertion: \(d.holdsAssertion ? "held" : (d.caffeineMode == "off" ? "off (normal)" : "not held⚠️"))")
         print("  \(mark(d.accessibilityTrusted)) Accessibility: \(d.accessibilityTrusted ? "granted" : "not granted (Enhanced unavailable)")")
         print("  \(mark(!d.linkSystemFocus || d.focusShortcutsInstalled)) Link system Focus: \(d.linkSystemFocus ? "on" : "off")\(d.linkSystemFocus ? (d.focusShortcutsInstalled ? " (shortcuts ready)" : " (shortcuts missing⚠️)") : "")")
+        if d.linkSystemFocus {
+            print("  \(d.focusRestoreReady ? "✅" : "ℹ️") Focus restore on exit: \(d.focusRestoreReady ? "on (won't clobber a Focus you already had)" : "off (add ‘Caffinate Focus Status’ shortcut to enable)")")
+        }
         print("  \(mark(d.historyWritable)) History writable: \(d.historyWritable ? "yes" : "no")")
         print("  History file: \(d.historyPath)")
         return

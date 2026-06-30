@@ -278,6 +278,18 @@ do {
     try? FileManager.default.removeItem(at: tmp)
 }
 
+// Focus 还原策略：「不覆盖」语义
+do {
+    // 进入：没开 / 读不到 → 开我们的；已有 Focus → 不碰
+    expect(FocusRestorePolicy.shouldActivateOurFocus(prior: .none), "本来没开 → 开我们的")
+    expect(FocusRestorePolicy.shouldActivateOurFocus(prior: .unavailable), "读不到 → 回退开我们的")
+    expect(!FocusRestorePolicy.shouldActivateOurFocus(prior: .active("Work")), "本来开着 → 不覆盖")
+
+    // 退出：仅当我们开过才关 → 精确还原
+    expect(FocusRestorePolicy.shouldDeactivate(weActivated: true), "我们开的 → 退出时关回没开")
+    expect(!FocusRestorePolicy.shouldDeactivate(weActivated: false), "不是我们开的 → 退出时不动你的 Focus")
+}
+
 if failures > 0 {
     print("\n\(failures) 个失败")
     exit(1)

@@ -46,18 +46,21 @@ public struct Diagnostics: Codable, Equatable {
     public var holdsAssertion: Bool        // 是否真正持有防休眠断言
     public var accessibilityTrusted: Bool  // 增强档所需
     public var linkSystemFocus: Bool
-    public var focusShortcutsInstalled: Bool  // 两个快捷指令都在
+    public var focusShortcutsInstalled: Bool  // On/Off 两个快捷指令都在
+    public var focusRestoreReady: Bool        // Status 快捷指令在 → 退出时精确还原
     public var historyPath: String
     public var historyWritable: Bool
 
     public init(caffeineMode: String, holdsAssertion: Bool, accessibilityTrusted: Bool,
                 linkSystemFocus: Bool, focusShortcutsInstalled: Bool,
+                focusRestoreReady: Bool = false,
                 historyPath: String, historyWritable: Bool) {
         self.caffeineMode = caffeineMode
         self.holdsAssertion = holdsAssertion
         self.accessibilityTrusted = accessibilityTrusted
         self.linkSystemFocus = linkSystemFocus
         self.focusShortcutsInstalled = focusShortcutsInstalled
+        self.focusRestoreReady = focusRestoreReady
         self.historyPath = historyPath
         self.historyWritable = historyWritable
     }

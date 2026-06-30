@@ -31,3 +31,12 @@ echo
 if [ "$missing" -eq 0 ]; then
     echo "完成后，在 Caffinate 设置打开「专注时静音通知」，或运行：caf set focus-link on"
 fi
+
+echo
+if shortcuts list 2>/dev/null | grep -qxF "Caffinate Focus Status"; then
+    echo "✓ 已存在：Caffinate Focus Status（退出时精确还原已就绪）"
+else
+    echo "（可选）想要「退出专注时精确还原原来的 Focus」？再手动建一个快捷指令："
+    echo "   名称 “Caffinate Focus Status”，只放一个「取得当前专注模式」(Get Current Focus) 动作。"
+    echo "   没建则退出时一律关闭 Focus（老行为）。详见 README「专注联动系统 Focus」。"
+fi

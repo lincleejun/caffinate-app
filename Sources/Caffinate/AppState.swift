@@ -76,6 +76,7 @@ final class AppState: ObservableObject {
             accessibilityTrusted: CaffeineController.accessibilityTrusted,
             linkSystemFocus: linkSystemFocus,
             focusShortcutsInstalled: ShortcutsFocusVendor.installed(),
+            focusRestoreReady: ShortcutsFocusVendor.restoreReady(),
             historyPath: historySink.path,
             historyWritable: FileManager.default.isWritableFile(atPath: historySink.path)
         )

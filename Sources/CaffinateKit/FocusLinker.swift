@@ -10,6 +10,35 @@ public protocol FocusVendor: AnyObject {
     func deactivate(then: (() -> Void)?)
 }
 
+/// 进入专注前读到的系统 Focus 现状。
+public enum FocusQuery: Equatable {
+    case unavailable        // 读不到（没建查询快捷指令 / 执行失败）
+    case none               // 当前没有任何 Focus 开启
+    case active(String)     // 当前已开着某个 Focus（名字）
+}
+
+/// 「不覆盖」还原策略（纯逻辑，便于测试）。
+///
+/// macOS 限制：`Set Focus` 不能按运行时名字开启任意 Focus，所以无法「切到我们的
+/// Focus 再切回你原来的」。能精确还原的做法是**不覆盖**——你本来开着的不碰、
+/// 你本来没开的我们才管。
+public enum FocusRestorePolicy {
+    /// 进入专注时是否应开启「我们的」Focus。
+    /// 只有「当前没开」或「读不到（回退老行为）」时才开；已有 Focus 一律不碰。
+    public static func shouldActivateOurFocus(prior: FocusQuery) -> Bool {
+        switch prior {
+        case .none, .unavailable: return true
+        case .active: return false
+        }
+    }
+
+    /// 退出专注时是否应关闭 Focus。仅当进入时确实是「我们」开的才关，
+    /// 从而精确还原；你本来开着的保持不动。
+    public static func shouldDeactivate(weActivated: Bool) -> Bool {
+        weActivated
+    }
+}
+
 /// 番茄钟与系统 Focus 的联动器：把「现在该不该勿扰」翻译成对 vendor 的调用。
 ///
 /// 只追踪自己开过的状态，对外暴露 `engage()` / `disengage()` 两个**幂等**操作：
