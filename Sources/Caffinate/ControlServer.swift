@@ -107,6 +107,15 @@ final class ControlServer {
         case "doctor":
             return ControlResponse(ok: true, diagnostics: state.diagnostics())
 
+        case "hooks":
+            let inv = HookInventory(
+                directory: state.hooks.directoryPath,
+                configPath: state.hooks.configPath,
+                executables: state.hooks.discoveredExecutables(),
+                rules: state.hooks.configRules().map { .init(on: $0.on, run: $0.run) }
+            )
+            return ControlResponse(ok: true, hooks: inv)
+
         case "caffeine":
             let target: CaffeineController.Mode?
             switch request.args.first {
@@ -116,6 +125,7 @@ final class ControlServer {
             default: target = nil
             }
             guard let target else { return ControlResponse(ok: false, error: "Invalid mode") }
+            state.caffeineSourceHint = "cli"
             state.caffeine.set(target)
             guard state.caffeine.mode == target else {
                 return ControlResponse(ok: false, error: state.caffeine.lastError ?? "Switch failed",

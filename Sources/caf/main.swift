@@ -95,6 +95,26 @@ func render(_ resp: ControlResponse) {
         else { for r in history { print(r.display) } }
         return
     }
+    if let h = resp.hooks {
+        print("🪝 Caffinate hooks")
+        print("  Dir:    \(h.directory)")
+        print("  Config: \(h.configPath)")
+        if h.executables.isEmpty {
+            print("  Executables: (none — drop a file named after an event, chmod +x)")
+        } else {
+            print("  Executables:")
+            for e in h.executables { print("    • \(e)") }
+        }
+        if h.rules.isEmpty {
+            print("  hooks.json rules: (none)")
+        } else {
+            print("  hooks.json rules:")
+            for r in h.rules { print("    • \(r.on) → \(r.run)") }
+        }
+        print("  Events: caffeine.{off,basic,enhanced} · pomodoro.focus.{start,end,interrupted}"
+              + " · pomodoro.rest.{start,end,interrupted} · pomodoro.{pause,resume}")
+        return
+    }
     guard let s = resp.state else { return }
 
     let mode = ["off": "Off", "basic": "Basic", "enhanced": "Enhanced"][s.caffeineMode] ?? s.caffeineMode

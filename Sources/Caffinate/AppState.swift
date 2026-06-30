@@ -60,6 +60,40 @@ final class AppState: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var controlServer: ControlServer?
 
+    // MARK: - Hooks（状态变化 → 外部脚本）
+    let hooks = HookEngine()
+    /// 下一次咖啡因改档的来源标记。已知来源处（pomodoro/cli）置位，sink 读后复位为
+    /// manual。UI 直接调 caffeine.set 不置位 → 默认 manual；auto-off/wake 退化为 manual。
+    var caffeineSourceHint = "manual"
+    /// 追踪上一档，给 caffeine hook 提供 prev_mode。
+    private var previousCaffeineMode: CaffeineController.Mode = .off
+
+    private static func phaseCSV(_ p: PomodoroEngine.Phase) -> String {
+        switch p { case .idle: return "idle"; case .focus: return "focus"; case .rest: return "rest" }
+    }
+    private static let isoFormatter = ISO8601DateFormatter()
+    private static func iso(_ d: Date) -> String { isoFormatter.string(from: d) }
+
+    /// 发一个番茄钟事件（phase/remaining 显式传入，避免引擎已切档导致语义错位）。
+    private func dispatchPomodoroHook(_ name: String, phase: PomodoroEngine.Phase, remaining: TimeInterval) {
+        hooks.dispatch(HookEvent(name: name, fields: [
+            ("phase", Self.phaseCSV(phase)),
+            ("remaining_sec", String(Int(max(0, remaining)))),
+            ("ts", Self.iso(Date())),
+        ]))
+    }
+
+    /// 发一个咖啡因事件，并复位来源提示位。
+    private func dispatchCaffeineHook(from prev: CaffeineController.Mode, to mode: CaffeineController.Mode) {
+        hooks.dispatch(HookEvent(name: "caffeine.\(Self.modeCSV(mode))", fields: [
+            ("mode", Self.modeCSV(mode)),
+            ("prev_mode", Self.modeCSV(prev)),
+            ("source", caffeineSourceHint),
+            ("ts", Self.iso(Date())),
+        ]))
+        caffeineSourceHint = "manual"
+    }
+
     private static func modeCSV(_ m: CaffeineController.Mode) -> String {
         switch m { case .off: return "off"; case .basic: return "basic"; case .enhanced: return "enhanced" }
     }
@@ -109,6 +143,18 @@ final class AppState: ObservableObject {
                 self.refreshHistory()
             }
             .store(in: &cancellables)
+        // 咖啡因档位变化 → 触发 hook。dropFirst 跳过订阅时的初始 .off，避免启动即触发。
+        hooks.ensureDirectory()
+        caffeine.$mode
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] mode in
+                guard let self else { return }
+                let prev = self.previousCaffeineMode
+                self.previousCaffeineMode = mode
+                self.dispatchCaffeineHook(from: prev, to: mode)
+            }
+            .store(in: &cancellables)
         // App 退出：收尾未结束的咖啡因段（queue: .main 保证主线程，可安全 assumeIsolated）
         NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification, object: nil, queue: .main
@@ -124,22 +170,45 @@ final class AppState: ObservableObject {
     // MARK: - 番茄钟操作
     func startFocus() {
         if autoCaffeinate && caffeine.mode == .off {
+            caffeineSourceHint = "pomodoro"
             caffeine.set(.basic)
             caffeineElevatedByPomodoro = true
         }
         engine.startFocus()
         historyTracker.pomodoroBegan("focus", at: Date())
+        dispatchPomodoroHook("pomodoro.focus.start", phase: .focus, remaining: engine.remaining)
         syncFromEngine()
         startTicker()
     }
 
-    func pause() { engine.pause(); syncFromEngine() }
-    func resume() { engine.resume(); syncFromEngine() }
+    func pause() {
+        let wasActive = engine.phase != .idle && !engine.isPaused
+        engine.pause()
+        if wasActive {
+            dispatchPomodoroHook("pomodoro.pause", phase: engine.phase, remaining: engine.remaining)
+        }
+        syncFromEngine()
+    }
+
+    func resume() {
+        let wasPaused = engine.phase != .idle && engine.isPaused
+        engine.resume()
+        if wasPaused {
+            dispatchPomodoroHook("pomodoro.resume", phase: engine.phase, remaining: engine.remaining)
+        }
+        syncFromEngine()
+    }
 
     func reset() {
-        let wasRunning = engine.phase != .idle
+        let endedPhase = engine.phase
+        let remainingAtReset = engine.remaining
+        let wasRunning = endedPhase != .idle
         engine.reset()
-        if wasRunning { historyTracker.pomodoroEnded(completed: false, at: Date()) }
+        if wasRunning {
+            historyTracker.pomodoroEnded(completed: false, at: Date())
+            dispatchPomodoroHook("pomodoro.\(Self.phaseCSV(endedPhase)).interrupted",
+                                 phase: endedPhase, remaining: remainingAtReset)
+        }
         syncFromEngine()
         stopTicker()
         restoreCaffeineIfNeeded()
@@ -182,11 +251,15 @@ final class AppState: ObservableObject {
         let now = Date()
         historyTracker.pomodoroEnded(completed: true, at: now)  // 自然走完 → completed
         if ended == .focus {
+            dispatchPomodoroHook("pomodoro.focus.end", phase: .focus, remaining: 0)
             historyTracker.pomodoroBegan("rest", at: now)       // 紧接进入休息段
+            // 此刻 engine 已切到 rest，remaining 即休息时长
+            dispatchPomodoroHook("pomodoro.rest.start", phase: .rest, remaining: engine.remaining)
             // 专注结束进入休息：先关掉系统 Focus，关完再发「专注结束」通知，
             // 否则通知会被勿扰吞掉。未开启联动时 disengage 会立即跑回调。
             focusLinker.disengage(then: { [weak self] in self?.notify(ended) })
         } else {
+            dispatchPomodoroHook("pomodoro.rest.end", phase: .rest, remaining: 0)
             notify(ended)
             restoreCaffeineIfNeeded()
         }
@@ -196,6 +269,7 @@ final class AppState: ObservableObject {
     /// 番茄钟自动开启的防休眠，整个周期结束（或重置）时恢复为关
     private func restoreCaffeineIfNeeded() {
         if caffeineElevatedByPomodoro {
+            caffeineSourceHint = "pomodoro"
             caffeine.set(.off)
             caffeineElevatedByPomodoro = false
         }
