@@ -66,6 +66,26 @@ public struct Diagnostics: Codable, Equatable {
     }
 }
 
+/// `caf hooks`：已配置的事件钩子清单（目录自动发现 + hooks.json）。
+public struct HookInventory: Codable, Equatable {
+    public struct Rule: Codable, Equatable {
+        public var on: String
+        public var run: String
+        public init(on: String, run: String) { self.on = on; self.run = run }
+    }
+    public var directory: String      // hooks 目录
+    public var configPath: String     // hooks.json 路径
+    public var executables: [String]  // 目录里发现的可执行钩子文件名
+    public var rules: [Rule]          // hooks.json 里的规则
+
+    public init(directory: String, configPath: String, executables: [String], rules: [Rule]) {
+        self.directory = directory
+        self.configPath = configPath
+        self.executables = executables
+        self.rules = rules
+    }
+}
+
 public struct ControlResponse: Codable, Equatable {
     public var ok: Bool
     public var message: String?
@@ -73,16 +93,18 @@ public struct ControlResponse: Codable, Equatable {
     public var state: ControlState?
     public var history: [HistoryRecord]?
     public var diagnostics: Diagnostics?
+    public var hooks: HookInventory?
 
     public init(ok: Bool, message: String? = nil, error: String? = nil,
                 state: ControlState? = nil, history: [HistoryRecord]? = nil,
-                diagnostics: Diagnostics? = nil) {
+                diagnostics: Diagnostics? = nil, hooks: HookInventory? = nil) {
         self.ok = ok
         self.message = message
         self.error = error
         self.state = state
         self.history = history
         self.diagnostics = diagnostics
+        self.hooks = hooks
     }
 }
 
@@ -134,6 +156,7 @@ public enum CLIParse {
       caf set focus-link on|off Link system Focus while focusing (mute notifications, needs Shortcuts)
       caf history [n]         Run history (default last 20)
       caf doctor              Health check (assertion/permission/shortcuts/history)
+      caf hooks               List event hooks (dir + hooks.json) and their paths
       caf help                This help
     """
 
@@ -155,6 +178,8 @@ public enum CLIParse {
             return .run(.init(request: .init(command: "caffeine", args: ["off"])))
         case "doctor":
             return .run(.init(request: .init(command: "doctor")))
+        case "hooks":
+            return .run(.init(request: .init(command: "hooks")))
         case "history":
             switch argv.dropFirst().first {
             case nil:

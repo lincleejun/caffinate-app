@@ -290,6 +290,66 @@ do {
     expect(!FocusRestorePolicy.shouldDeactivate(weActivated: false), "不是我们开的 → 退出时不动你的 Focus")
 }
 
+// Hooks: 事件匹配 + 解析 + 载荷（纯逻辑）
+do {
+    expect(HookResolver.matches(pattern: "*", name: "anything"), "* 匹配任意")
+    expect(HookResolver.matches(pattern: "caffeine.*", name: "caffeine.off"), "caffeine.* 匹配 caffeine.off")
+    expect(HookResolver.matches(pattern: "caffeine.*", name: "caffeine"), "caffeine.* 匹配裸 caffeine")
+    expect(!HookResolver.matches(pattern: "caffeine.*", name: "pomodoro.focus.start"), "caffeine.* 不匹配 pomodoro")
+    expect(HookResolver.matches(pattern: "pomodoro.focus.start", name: "pomodoro.focus.start"), "精确匹配")
+    expect(!HookResolver.matches(pattern: "pomodoro.focus.start", name: "pomodoro.focus.end"), "精确不误匹配")
+
+    let cfg = HookConfig(hooks: [
+        .init(on: "caffeine.*", run: "A"),
+        .init(on: "*", run: "B"),
+        .init(on: "pomodoro.focus.start", run: "C"),
+    ])
+    let acts = HookResolver.actions(
+        for: "caffeine.off", config: cfg,
+        directoryEntries: ["caffeine.off", "all", "pomodoro.focus.start"])
+    expect(acts.contains(.executable("caffeine.off")), "目录命中精确事件名")
+    expect(acts.contains(.executable("all")), "目录 all 命中所有事件")
+    expect(!acts.contains(.executable("pomodoro.focus.start")), "目录不命中无关事件")
+    expect(acts.contains(.shell("A")) && acts.contains(.shell("B")), "config glob 命中")
+    expect(!acts.contains(.shell("C")), "config 精确不误命中")
+
+    let ev = HookEvent(name: "caffeine.enhanced", fields: [("mode", "enhanced"), ("prev_mode", "off")])
+    expect(ev.environment["CAFFINATE_EVENT"] == "caffeine.enhanced", "env CAFFINATE_EVENT")
+    expect(ev.environment["CAFFINATE_MODE"] == "enhanced", "env CAFFINATE_MODE")
+    expect(ev.environment["CAFFINATE_PREV_MODE"] == "off", "env CAFFINATE_PREV_MODE")
+    expect(ev.jsonPayload == #"{"event":"caffeine.enhanced","mode":"enhanced","prev_mode":"off"}"#,
+           "stdin JSON 载荷")
+}
+
+// Hooks: 端到端派生（目录钩子真实执行 + env + stdin JSON）
+do {
+    let base = FileManager.default.temporaryDirectory
+        .appendingPathComponent("caffinate-hooktest-\(UUID().uuidString)")
+    let hooksDir = base.appendingPathComponent("hooks")
+    try? FileManager.default.createDirectory(at: hooksDir, withIntermediateDirectories: true)
+    let sentinel = base.appendingPathComponent("out.txt")
+    let script = """
+    #!/bin/bash
+    { printf '%s\\n' "$CAFFINATE_EVENT"; cat; } > "\(sentinel.path)"
+    """
+    let hookFile = hooksDir.appendingPathComponent("pomodoro.focus.start")
+    try? script.write(to: hookFile, atomically: true, encoding: .utf8)
+    try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: hookFile.path)
+
+    let engine = HookEngine(directory: hooksDir, timeout: 5)
+    engine.dispatch(HookEvent(name: "pomodoro.focus.start",
+                              fields: [("phase", "focus"), ("remaining_sec", "1500")]))
+
+    var waited = 0.0
+    while !FileManager.default.fileExists(atPath: sentinel.path) && waited < 3.0 {
+        usleep(50_000); waited += 0.05
+    }
+    let content = (try? String(contentsOf: sentinel, encoding: .utf8)) ?? ""
+    expect(content.contains("pomodoro.focus.start"), "目录钩子真实执行并收到 CAFFINATE_EVENT")
+    expect(content.contains("\"remaining_sec\":\"1500\""), "目录钩子从 stdin 收到 JSON 载荷")
+    try? FileManager.default.removeItem(at: base)
+}
+
 if failures > 0 {
     print("\n\(failures) 个失败")
     exit(1)
